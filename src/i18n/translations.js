@@ -1,0 +1,759 @@
+/**
+ * Translations for the WhatsApp booking bot.
+ * Supported languages: en (English), nl (Dutch), es (Spanish), fr (French)
+ *
+ * Usage: t(lang, 'key') or t(lang, 'key', { placeholder: value })
+ */
+
+const TRANSLATIONS = {
+
+  // ── English ────────────────────────────────────────────────────────────────
+  en: {
+    // Language selection
+    lang_name: 'English',
+
+    // Resets / shortcuts
+    cancelled:         '❌ Booking cancelled. Type *menu* whenever you\'re ready! ✂️',
+    invalid_menu:      'Please reply with *1 – 9*.',
+    menu_language:     'Change Language',
+    menu_manage:       'Manage My Appointment',
+
+    // Main menu
+    welcome:           '💈 *Welcome to {shop_name}!*\n\nHow can I help you today?',
+    menu_book:         '📅 Book an Appointment',
+    menu_services:     '💈 Our Services & Prices',
+    menu_hours:        '⏰ Business Hours',
+    menu_location:     '📍 Location',
+    menu_contact:      '📞 Contact Us',
+    menu_reply:        'Reply with a number to continue.',
+
+    // Service selection
+    book_header:       '📅 *Book an Appointment*\n\nSelect a service:',
+    services_header:   '💈 *Services & Prices*',
+    reply_number:      'Reply with a number',
+    reply_or_back:     'Reply with a number, or *0* to go back',
+    no_barbers_service:'😔 Sorry, no barbers are currently available for *{service}*. Please contact us directly.',
+    invalid_choice:    'Please reply with *1 – {max}*.',
+
+    // Employee selection
+    choose_barber:     '💈 *Choose your barber:*',
+    any_barber:        '🎲 Any Available Barber',
+    service_label:     'Service',
+
+    // Date selection
+    select_date:       '📅 *Select a Date*',
+    no_slots_date:     '😔 No open slots on *{date}*. Please pick another day.',
+
+    // Time selection
+    select_time:       '⏰ *Available Times*',
+
+    // Name entry
+    enter_name:        '👤 *Almost done!*\n\nPlease type your *full name* to reserve your spot:',
+    name_too_short:    '✏️ Please enter your *full name* to continue.',
+
+    // Confirmation
+    confirm_header:    '✅ *Booking Summary*',
+    confirm_name:      '👤 Name',
+    confirm_barber:    '💈 Barber',
+    confirm_service:   'Service',
+    confirm_date:      '📅 Date',
+    confirm_time:      '⏰ Time',
+    confirm_duration:  '⏱️ Duration',
+    confirm_price:     '💰 Price',
+    confirm_prompt:    'Reply *YES* to confirm ✅  |  *NO* to cancel ❌',
+    confirm_invalid:   'Please reply *YES* to confirm or *NO* to cancel.',
+    confirm_cancel:    '❌ Booking cancelled. Type *1* to start again or *menu* for the main menu.',
+
+    // Booking confirmed
+    booked_header:     '🎉 *Appointment Confirmed!*',
+    booked_code:       '🎫 *Booking Code: {code}*',
+    booked_code_note:  '_Save this code — you may need it to reschedule._',
+    booked_barber:     '💈 Barber: *{barber}*',
+    booked_footer_default: 'We look forward to seeing you! ✂️',
+
+    // Hours / location / contact
+    hours_header:      '⏰ *Business Hours*',
+    hours_back:        '🏠 Type *menu* to go back',
+    hours_closed:      'Closed',
+    location_header:   '📍 *Location*',
+    contact_header:    '📞 *Contact Us*',
+    contact_phone:     '📱 WhatsApp / Phone',
+    contact_email:     '📧 Email',
+    contact_instagram: '📸 Instagram',
+    back_menu:         '🏠 Type *menu* to go back',
+    book_prompt:       '📅 Reply *1* to book',
+
+    // Day names
+    days: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+
+    // Yes / No / Back words (lowercased)
+    calendar_invite_note: '📆 A calendar invite is attached — tap it to save to Google or Apple Calendar.',
+
+    // Appointment management (option 7)
+    manage_prompt:            '📋 *Manage Appointment*\n\nEnter your *4-character booking code*:\n\n_Type *0* to go back_',
+    manage_not_found:         '❌ Booking code not found. Please check and try again, or type *0* to go back.',
+    manage_invalid_status:    '⚠️ This appointment is already *{status}* and cannot be modified. Type *menu* to return.',
+    manage_header:            '📋 *Your Appointment*',
+    manage_option_1:          '📅 Reschedule',
+    manage_option_2:          '❌ Cancel Appointment',
+    manage_cancel_confirm:    '⚠️ Are you sure you want to *cancel* this appointment?\n\nReply *YES* to cancel  |  *NO* to keep it',
+    manage_cancelled:         '✅ Your appointment has been cancelled.\n\nWe hope to see you again soon! 💈 Type *menu* to return.',
+    manage_rescheduled:       '🔄 *Appointment Rescheduled!*',
+    manage_reschedule_confirm:'Confirm new date & time?',
+    no_dates_available:       '😔 No available dates found. Please contact us directly.',
+
+    back_to_main_menu:  'Booking cancelled — you\'re back at the main menu.',
+
+    // Group / family booking
+    group_size_prompt:  '👥 *For how many people is this appointment?*',
+    group_just_me:      'Just me',
+    group_people:       'people',
+    group_people_lower: 'person(s)',
+    group_overflow_note:'({first} together + {rest} right after)',
+    group_slots_note:   '{count} barbers free at the same time',
+    group_invalid:      'Please enter a number between *1* and *{max}*.',
+    group_follow_up:    'follow-up slot',
+    booked_header_group:'🎉 *Group Booking Confirmed! ({count} people)*',
+    confirm_group:      '👥 Group',
+
+    // Barber training
+    menu_training:      '🎓 Barber Training',
+    training_unavailable: '😔 No training material has been set up yet. Check back soon!',
+
+    // Photo gallery
+    menu_gallery:       '📸 Browse Styles & Gallery',
+    gallery_header:     '📸 *Browse Our Styles*\n\nChoose a category:',
+    gallery_no_tags:    '📸 No photos uploaded yet. Check back soon!',
+    gallery_no_photos:  '😔 No photos found for that style. Try another category!',
+    gallery_sending:    '📸 *{tag}* styles:',
+    gallery_more:       '_+{count} more photos available — visit us to see them all!_',
+    gallery_invalid:    'Please reply with a valid number, or *0* to go back.',
+
+    // Blocked customer
+    customer_blocked: '🚫 Your access to the booking bot has been temporarily restricted. Please contact us directly at *{phone}* to resolve this.',
+
+    // Post-appointment survey
+    survey_invalid: 'Please reply with a number between *1* and *5*.',
+    survey_thanks:  '🙏 *Thank you for your feedback!*\n\n{stars} ({rating}/5)\n\nWe look forward to seeing you again! 💈',
+
+    // Returning customer welcome (skips language selection)
+    returning_welcome: '👋 *Welcome back, {name}!*\n\nGreat to see you again. How can I help you today? 💈',
+
+    // First-time customer welcome (shown instead of normal welcome header)
+    new_customer_welcome: '🌟 *Welcome to {shop_name}!*\n\nWe\'re so glad you found us! As a first-time visitor, feel free to explore our services or jump straight into booking your first appointment. We look forward to meeting you! 💈',
+
+    // Out-of-scope freeform message at main menu
+    out_of_scope: '🤔 That\'s a bit outside what I can help with here.\n\nFor specific questions, you can reach our team directly at *{phone}*.\n\nHere\'s what I *can* do for you:',
+
+    // Financial / discount query referral
+    finance_referral: '💰 Questions about *pricing, discounts or payments* are handled by our management — not the bot.\n\nPlease reach out directly:\n📱 *{phone}*\n\nType *menu* to return to the main menu.',
+
+    // Feedback / complaints & suggestions
+    menu_feedback:             '💬 Complaints & Suggestions',
+    feedback_header:           '💬 *Complaints & Suggestions*\n\nWhat would you like to do?',
+    feedback_option_complaint: '1️⃣ File a Complaint',
+    feedback_option_suggestion:'2️⃣ Share a Suggestion',
+    feedback_complaint_msg:    '📞 *Complaints*\n\nFor complaints, please contact us directly:\n📱 *{phone}*\n\nWe take all complaints seriously and will get back to you as soon as possible.\n\n🏠 Type *menu* to go back.',
+    feedback_suggestion_prompt:'💡 *Share Your Suggestion*\n\nType your suggestion below and we\'ll pass it on to the team:\n\n_Type *0* to go back_',
+    feedback_suggestion_thanks: '✅ *Thank you for your suggestion!*\n\nWe appreciate your input and will review it. 💈\n\n🏠 Type *menu* to go back.',
+    feedback_invalid:          'Please reply with *1* or *2*, or type *0* to go back.',
+
+    yes_words:  ['yes','y'],
+    no_words:   ['no','n'],
+    back_words: ['0','back','b','terug'],
+  },
+
+  // ── Dutch (Nederlands) ────────────────────────────────────────────────────
+  nl: {
+    lang_name: 'Nederlands',
+
+    cancelled:         '❌ Boeking geannuleerd. Typ *menu* wanneer je klaar bent! ✂️',
+    invalid_menu:      'Antwoord met *1 – 9*.',
+    menu_language:     'Taal Wijzigen',
+    menu_manage:       'Mijn Afspraak Beheren',
+
+    welcome:           '💈 *Welkom bij {shop_name}!*\n\nHoe kan ik u helpen vandaag?',
+    menu_book:         '📅 Afspraak Maken',
+    menu_services:     '💈 Diensten & Prijzen',
+    menu_hours:        '⏰ Openingstijden',
+    menu_location:     '📍 Locatie',
+    menu_contact:      '📞 Contact',
+    menu_reply:        'Antwoord met een cijfer om door te gaan.',
+
+    book_header:       '📅 *Afspraak Maken*\n\nKies een dienst:',
+    services_header:   '💈 *Diensten & Prijzen*',
+    reply_number:      'Antwoord met een cijfer',
+    reply_or_back:     'Antwoord met een cijfer, of *0* om terug te gaan',
+    no_barbers_service:'😔 Sorry, geen kapper beschikbaar voor *{service}*. Neem rechtstreeks contact op.',
+    invalid_choice:    'Antwoord met *1 – {max}*.',
+
+    choose_barber:     '💈 *Kies uw kapper:*',
+    any_barber:        '🎲 Elke Beschikbare Kapper',
+    service_label:     'Dienst',
+
+    select_date:       '📅 *Kies een Datum*',
+    no_slots_date:     '😔 Geen vrije plekken op *{date}*. Kies een andere dag.',
+
+    select_time:       '⏰ *Beschikbare Tijden*',
+
+    enter_name:        '👤 *Bijna klaar!*\n\nTyp uw *volledige naam* om uw plek te reserveren:',
+    name_too_short:    '✏️ Voer uw *volledige naam* in om door te gaan.',
+
+    confirm_header:    '✅ *Boekingsoverzicht*',
+    confirm_name:      '👤 Naam',
+    confirm_barber:    '💈 Kapper',
+    confirm_service:   'Dienst',
+    confirm_date:      '📅 Datum',
+    confirm_time:      '⏰ Tijd',
+    confirm_duration:  '⏱️ Duur',
+    confirm_price:     '💰 Prijs',
+    confirm_prompt:    'Antwoord *JA* om te bevestigen ✅  |  *NEE* om te annuleren ❌',
+    confirm_invalid:   'Antwoord *JA* om te bevestigen of *NEE* om te annuleren.',
+    confirm_cancel:    '❌ Boeking geannuleerd. Typ *1* om opnieuw te beginnen of *menu* voor het hoofdmenu.',
+
+    booked_header:     '🎉 *Afspraak Bevestigd!*',
+    booked_code:       '🎫 *Boekingscode: {code}*',
+    booked_code_note:  '_Bewaar deze code — u heeft deze mogelijk nodig om te verzetten._',
+    booked_barber:     '💈 Kapper: *{barber}*',
+    booked_footer_default: 'We kijken uit naar uw bezoek! ✂️',
+
+    hours_header:      '⏰ *Openingstijden*',
+    hours_back:        '🏠 Typ *menu* om terug te gaan',
+    hours_closed:      'Gesloten',
+    location_header:   '📍 *Locatie*',
+    contact_header:    '📞 *Contact*',
+    contact_phone:     '📱 WhatsApp / Telefoon',
+    contact_email:     '📧 E-mail',
+    contact_instagram: '📸 Instagram',
+    back_menu:         '🏠 Typ *menu* om terug te gaan',
+    book_prompt:       '📅 Typ *1* om te boeken',
+
+    days: ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'],
+
+    calendar_invite_note: '📆 Er is een kalenderuitnodiging bijgevoegd — tik erop om op te slaan in Google of Apple Agenda.',
+
+    // Appointment management (option 7)
+    manage_prompt:            '📋 *Afspraak Beheren*\n\nVoer uw *4-tekens boekingscode* in:\n\n_Typ *0* om terug te gaan_',
+    manage_not_found:         '❌ Boekingscode niet gevonden. Controleer en probeer opnieuw, of typ *0* om terug te gaan.',
+    manage_invalid_status:    '⚠️ Deze afspraak is al *{status}* en kan niet worden gewijzigd. Typ *menu* om terug te keren.',
+    manage_header:            '📋 *Uw Afspraak*',
+    manage_option_1:          '📅 Verzetten',
+    manage_option_2:          '❌ Afspraak Annuleren',
+    manage_cancel_confirm:    '⚠️ Weet u zeker dat u deze afspraak wilt *annuleren*?\n\nAntwoord *JA* om te annuleren  |  *NEE* om te behouden',
+    manage_cancelled:         '✅ Uw afspraak is geannuleerd.\n\nWij hopen u snel weer te zien! 💈 Typ *menu* om terug te keren.',
+    manage_rescheduled:       '🔄 *Afspraak Verzet!*',
+    manage_reschedule_confirm:'Nieuwe datum & tijd bevestigen?',
+    no_dates_available:       '😔 Geen beschikbare datums gevonden. Neem rechtstreeks contact op.',
+
+    back_to_main_menu:  'Boeking geannuleerd — u bent terug in het hoofdmenu.',
+
+    // Group / family booking
+    group_size_prompt:  '👥 *Voor hoeveel personen is deze afspraak?*',
+    group_just_me:      'Alleen ik',
+    group_people:       'personen',
+    group_people_lower: 'persoon/personen',
+    group_overflow_note:'({first} tegelijk + {rest} daarna)',
+    group_slots_note:   '{count} kappers tegelijk beschikbaar',
+    group_invalid:      'Voer een getal in tussen *1* en *{max}*.',
+    group_follow_up:    'vervolg afspraak',
+    booked_header_group:'🎉 *Groepsboeking Bevestigd! ({count} personen)*',
+    confirm_group:      '👥 Groep',
+
+    // Barber training
+    menu_training:      '🎓 Kapperstraining',
+    training_unavailable: '😔 Er is nog geen trainingsmateriaal beschikbaar. Kijk later nog eens!',
+
+    // Photo gallery
+    menu_gallery:       '📸 Stijlen & Galerij Bekijken',
+    gallery_header:     '📸 *Onze Stijlen*\n\nKies een categorie:',
+    gallery_no_tags:    '📸 Nog geen foto\'s beschikbaar. Kom binnenkort terug!',
+    gallery_no_photos:  '😔 Geen foto\'s gevonden voor die stijl. Probeer een andere categorie!',
+    gallery_sending:    '📸 *{tag}* stijlen:',
+    gallery_more:       '_+{count} meer foto\'s beschikbaar — bezoek ons om ze allemaal te zien!_',
+    gallery_invalid:    'Antwoord met een geldig getal, of *0* om terug te gaan.',
+
+    // Blocked customer
+    customer_blocked: '🚫 Uw toegang tot de boekingsbot is tijdelijk beperkt. Neem rechtstreeks contact met ons op via *{phone}*.',
+
+    // Post-appointment survey
+    survey_invalid: 'Antwoord met een getal tussen *1* en *5*.',
+    survey_thanks:  '🙏 *Bedankt voor uw feedback!*\n\n{stars} ({rating}/5)\n\nWij kijken uit naar uw volgende bezoek! 💈',
+
+    // Returning customer welcome
+    returning_welcome: '👋 *Welkom terug, {name}!*\n\nFijn u weer te zien. Hoe kan ik u helpen vandaag? 💈',
+
+    // First-time customer welcome
+    new_customer_welcome: '🌟 *Welkom bij {shop_name}!*\n\nWat fijn dat u ons gevonden heeft! Als nieuwe klant staan we klaar om u de beste ervaring te geven. Bekijk onze diensten of maak direct uw eerste afspraak! 💈',
+
+    // Out-of-scope freeform message at main menu
+    out_of_scope: '🤔 Dat valt buiten wat ik hier kan regelen.\n\nVoor specifieke vragen kunt u ons team bereiken via *{phone}*.\n\nHier is wat ik *wel* voor u kan doen:',
+
+    // Financial / discount query referral
+    finance_referral: '💰 Vragen over *prijzen, kortingen of betalingen* worden afgehandeld door onze manager — niet door de bot.\n\nNeem rechtstreeks contact op:\n📱 *{phone}*\n\nTyp *menu* om terug te gaan.',
+
+    // Feedback / klachten & suggesties
+    menu_feedback:             '💬 Klachten & Suggesties',
+    feedback_header:           '💬 *Klachten & Suggesties*\n\nWat wilt u doen?',
+    feedback_option_complaint: '1️⃣ Klacht Indienen',
+    feedback_option_suggestion:'2️⃣ Suggestie Delen',
+    feedback_complaint_msg:    '📞 *Klachten*\n\nVoor klachten kunt u ons rechtstreeks bereiken:\n📱 *{phone}*\n\nWij nemen elke klacht serieus en nemen zo snel mogelijk contact met u op.\n\n🏠 Typ *menu* om terug te gaan.',
+    feedback_suggestion_prompt:'💡 *Deel Uw Suggestie*\n\nTyp uw suggestie hieronder en wij sturen het door naar het team:\n\n_Typ *0* om terug te gaan_',
+    feedback_suggestion_thanks: '✅ *Bedankt voor uw suggestie!*\n\nWij waarderen uw inbreng en zullen het bekijken. 💈\n\n🏠 Typ *menu* om terug te gaan.',
+    feedback_invalid:          'Antwoord met *1* of *2*, of typ *0* om terug te gaan.',
+
+    yes_words:  ['ja','j','yes','y'],
+    no_words:   ['nee','n','no'],
+    back_words: ['0','terug','back','b'],
+  },
+
+  // ── Spanish (Español) ─────────────────────────────────────────────────────
+  es: {
+    lang_name: 'Español',
+
+    cancelled:         '❌ Reserva cancelada. ¡Escribe *menú* cuando estés listo! ✂️',
+    invalid_menu:      'Por favor responde con *1 – 9*.',
+    menu_language:     'Cambiar Idioma',
+    menu_manage:       'Gestionar Mi Cita',
+
+    welcome:           '💈 *¡Bienvenido a {shop_name}!*\n\n¿Cómo puedo ayudarte hoy?',
+    menu_book:         '📅 Reservar Cita',
+    menu_services:     '💈 Servicios & Precios',
+    menu_hours:        '⏰ Horario de Atención',
+    menu_location:     '📍 Ubicación',
+    menu_contact:      '📞 Contáctenos',
+    menu_reply:        'Responde con un número para continuar.',
+
+    book_header:       '📅 *Reservar Cita*\n\nSelecciona un servicio:',
+    services_header:   '💈 *Servicios & Precios*',
+    reply_number:      'Responde con un número',
+    reply_or_back:     'Responde con un número, o *0* para volver',
+    no_barbers_service:'😔 Lo sentimos, no hay barberos disponibles para *{service}*. Contáctenos directamente.',
+    invalid_choice:    'Por favor responde con *1 – {max}*.',
+
+    choose_barber:     '💈 *Elige tu barbero:*',
+    any_barber:        '🎲 Cualquier Barbero Disponible',
+    service_label:     'Servicio',
+
+    select_date:       '📅 *Selecciona una Fecha*',
+    no_slots_date:     '😔 No hay horarios disponibles el *{date}*. Por favor elige otro día.',
+
+    select_time:       '⏰ *Horarios Disponibles*',
+
+    enter_name:        '👤 *¡Casi listo!*\n\nEscribe tu *nombre completo* para reservar tu lugar:',
+    name_too_short:    '✏️ Por favor escribe tu *nombre completo* para continuar.',
+
+    confirm_header:    '✅ *Resumen de la Reserva*',
+    confirm_name:      '👤 Nombre',
+    confirm_barber:    '💈 Barbero',
+    confirm_service:   'Servicio',
+    confirm_date:      '📅 Fecha',
+    confirm_time:      '⏰ Hora',
+    confirm_duration:  '⏱️ Duración',
+    confirm_price:     '💰 Precio',
+    confirm_prompt:    'Responde *SÍ* para confirmar ✅  |  *NO* para cancelar ❌',
+    confirm_invalid:   'Por favor responde *SÍ* para confirmar o *NO* para cancelar.',
+    confirm_cancel:    '❌ Reserva cancelada. Escribe *1* para empezar de nuevo o *menú* para el menú principal.',
+
+    booked_header:     '🎉 *¡Cita Confirmada!*',
+    booked_code:       '🎫 *Código de Reserva: {code}*',
+    booked_code_note:  '_Guarda este código — puede que lo necesites para reprogramar._',
+    booked_barber:     '💈 Barbero: *{barber}*',
+    booked_footer_default: '¡Esperamos verte pronto! ✂️',
+
+    hours_header:      '⏰ *Horario de Atención*',
+    hours_back:        '🏠 Escribe *menú* para volver',
+    hours_closed:      'Cerrado',
+    location_header:   '📍 *Ubicación*',
+    contact_header:    '📞 *Contáctenos*',
+    contact_phone:     '📱 WhatsApp / Teléfono',
+    contact_email:     '📧 Correo electrónico',
+    contact_instagram: '📸 Instagram',
+    back_menu:         '🏠 Escribe *menú* para volver',
+    book_prompt:       '📅 Escribe *1* para reservar',
+
+    days: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],
+
+    calendar_invite_note: '📆 Se adjunta una invitación de calendario — tócala para guardarla en Google o Apple Calendar.',
+
+    // Appointment management (option 7)
+    manage_prompt:            '📋 *Gestionar Cita*\n\nIngresa tu *código de reserva de 4 caracteres*:\n\n_Escribe *0* para volver_',
+    manage_not_found:         '❌ Código de reserva no encontrado. Verifica e inténtalo de nuevo, o escribe *0* para volver.',
+    manage_invalid_status:    '⚠️ Esta cita ya está *{status}* y no puede modificarse. Escribe *menú* para volver.',
+    manage_header:            '📋 *Tu Cita*',
+    manage_option_1:          '📅 Reprogramar',
+    manage_option_2:          '❌ Cancelar Cita',
+    manage_cancel_confirm:    '⚠️ ¿Estás seguro de que quieres *cancelar* esta cita?\n\nResponde *SÍ* para cancelar  |  *NO* para conservarla',
+    manage_cancelled:         '✅ Tu cita ha sido cancelada.\n\n¡Esperamos verte pronto! 💈 Escribe *menú* para volver.',
+    manage_rescheduled:       '🔄 *¡Cita Reprogramada!*',
+    manage_reschedule_confirm:'¿Confirmas la nueva fecha y hora?',
+    no_dates_available:       '😔 No hay fechas disponibles. Contáctanos directamente.',
+
+    back_to_main_menu:  'Reserva cancelada — está de vuelta en el menú principal.',
+
+    // Group / family booking
+    group_size_prompt:  '👥 *¿Para cuántas personas es esta cita?*',
+    group_just_me:      'Solo yo',
+    group_people:       'personas',
+    group_people_lower: 'persona(s)',
+    group_overflow_note:'({first} juntas + {rest} justo después)',
+    group_slots_note:   '{count} barberos libres al mismo tiempo',
+    group_invalid:      'Por favor ingresa un número entre *1* y *{max}*.',
+    group_follow_up:    'turno siguiente',
+    booked_header_group:'🎉 *¡Reserva Grupal Confirmada! ({count} personas)*',
+    confirm_group:      '👥 Grupo',
+
+    // Barber training
+    menu_training:      '🎓 Capacitación de Barberos',
+    training_unavailable: '😔 Aún no hay material de capacitación disponible. ¡Vuelve pronto!',
+
+    // Photo gallery
+    menu_gallery:       '📸 Ver Estilos y Galería',
+    gallery_header:     '📸 *Nuestros Estilos*\n\nElige una categoría:',
+    gallery_no_tags:    '📸 Aún no hay fotos disponibles. ¡Vuelve pronto!',
+    gallery_no_photos:  '😔 No se encontraron fotos para ese estilo. ¡Prueba otra categoría!',
+    gallery_sending:    '📸 Estilos de *{tag}*:',
+    gallery_more:       '_+{count} fotos más disponibles — ¡visítanos para verlas todas!_',
+    gallery_invalid:    'Por favor responde con un número válido, o *0* para volver.',
+
+    // Blocked customer
+    customer_blocked: '🚫 Tu acceso al bot de reservas ha sido temporalmente restringido. Contáctanos directamente en *{phone}*.',
+
+    // Post-appointment survey
+    survey_invalid: 'Por favor responde con un número entre *1* y *5*.',
+    survey_thanks:  '🙏 *¡Gracias por tu opinión!*\n\n{stars} ({rating}/5)\n\n¡Esperamos verte pronto! 💈',
+
+    // Returning customer welcome
+    returning_welcome: '👋 *¡Bienvenido de vuelta, {name}!*\n\nQué gusto verte de nuevo. ¿En qué puedo ayudarte hoy? 💈',
+
+    // First-time customer welcome
+    new_customer_welcome: '🌟 *¡Bienvenido a {shop_name}!*\n\n¡Nos alegra que nos hayas encontrado! Como nuevo cliente, estamos listos para brindarte la mejor experiencia. ¡Explora nuestros servicios o reserva tu primera cita! 💈',
+
+    // Out-of-scope freeform message at main menu
+    out_of_scope: '🤔 Eso está un poco fuera de lo que puedo ayudarte aquí.\n\nPara preguntas específicas, puedes contactar a nuestro equipo en *{phone}*.\n\nAquí está lo que *sí* puedo hacer:',
+
+    // Financial / discount query referral
+    finance_referral: '💰 Las preguntas sobre *precios, descuentos o pagos* las maneja nuestra gerencia — no el bot.\n\nContáctalos directamente:\n📱 *{phone}*\n\nEscribe *menú* para volver al menú principal.',
+
+    // Feedback
+    menu_feedback:             '💬 Quejas & Sugerencias',
+    feedback_header:           '💬 *Quejas & Sugerencias*\n\n¿Qué deseas hacer?',
+    feedback_option_complaint: '1️⃣ Presentar una Queja',
+    feedback_option_suggestion:'2️⃣ Compartir una Sugerencia',
+    feedback_complaint_msg:    '📞 *Quejas*\n\nPara quejas, contáctanos directamente:\n📱 *{phone}*\n\nTomamos todas las quejas en serio y nos pondremos en contacto contigo lo antes posible.\n\n🏠 Escribe *menú* para volver.',
+    feedback_suggestion_prompt:'💡 *Comparte tu Sugerencia*\n\nEscribe tu sugerencia a continuación y la enviaremos al equipo:\n\n_Escribe *0* para volver_',
+    feedback_suggestion_thanks: '✅ *¡Gracias por tu sugerencia!*\n\nApreciamos tu aporte y lo revisaremos. 💈\n\n🏠 Escribe *menú* para volver.',
+    feedback_invalid:          'Por favor responde con *1* o *2*, o escribe *0* para volver.',
+
+    yes_words:  ['si','sí','s','yes','y'],
+    no_words:   ['no','n'],
+    back_words: ['0','volver','back','b'],
+  },
+
+  // ── French (Français) ─────────────────────────────────────────────────────
+  fr: {
+    lang_name: 'Français',
+
+    cancelled:         '❌ Réservation annulée. Tapez *menu* quand vous êtes prêt ! ✂️',
+    invalid_menu:      'Veuillez répondre avec *1 – 9*.',
+    menu_language:     'Changer de Langue',
+    menu_manage:       'Gérer Mon Rendez-vous',
+
+    welcome:           '💈 *Bienvenue chez {shop_name} !*\n\nComment puis-je vous aider aujourd\'hui ?',
+    menu_book:         '📅 Prendre Rendez-vous',
+    menu_services:     '💈 Nos Services & Tarifs',
+    menu_hours:        '⏰ Heures d\'Ouverture',
+    menu_location:     '📍 Adresse',
+    menu_contact:      '📞 Nous Contacter',
+    menu_reply:        'Répondez avec un numéro pour continuer.',
+
+    book_header:       '📅 *Prendre Rendez-vous*\n\nChoisissez un service :',
+    services_header:   '💈 *Services & Tarifs*',
+    reply_number:      'Répondez avec un numéro',
+    reply_or_back:     'Répondez avec un numéro, ou *0* pour revenir',
+    no_barbers_service:'😔 Désolé, aucun barbier n\'est disponible pour *{service}*. Veuillez nous contacter directement.',
+    invalid_choice:    'Veuillez répondre avec *1 – {max}*.',
+
+    choose_barber:     '💈 *Choisissez votre barbier :*',
+    any_barber:        '🎲 N\'importe quel Barbier Disponible',
+    service_label:     'Service',
+
+    select_date:       '📅 *Choisissez une Date*',
+    no_slots_date:     '😔 Aucun créneau disponible le *{date}*. Veuillez choisir un autre jour.',
+
+    select_time:       '⏰ *Créneaux Disponibles*',
+
+    enter_name:        '👤 *Presque terminé !*\n\nVeuillez taper votre *nom complet* pour réserver votre place :',
+    name_too_short:    '✏️ Veuillez entrer votre *nom complet* pour continuer.',
+
+    confirm_header:    '✅ *Récapitulatif de la Réservation*',
+    confirm_name:      '👤 Nom',
+    confirm_barber:    '💈 Barbier',
+    confirm_service:   'Service',
+    confirm_date:      '📅 Date',
+    confirm_time:      '⏰ Heure',
+    confirm_duration:  '⏱️ Durée',
+    confirm_price:     '💰 Prix',
+    confirm_prompt:    'Répondez *OUI* pour confirmer ✅  |  *NON* pour annuler ❌',
+    confirm_invalid:   'Veuillez répondre *OUI* pour confirmer ou *NON* pour annuler.',
+    confirm_cancel:    '❌ Réservation annulée. Tapez *1* pour recommencer ou *menu* pour le menu principal.',
+
+    booked_header:     '🎉 *Rendez-vous Confirmé !*',
+    booked_code:       '🎫 *Code de Réservation : {code}*',
+    booked_code_note:  '_Conservez ce code — vous pourriez en avoir besoin pour reprogrammer._',
+    booked_barber:     '💈 Barbier : *{barber}*',
+    booked_footer_default: 'Nous avons hâte de vous voir ! ✂️',
+
+    hours_header:      '⏰ *Heures d\'Ouverture*',
+    hours_back:        '🏠 Tapez *menu* pour revenir',
+    hours_closed:      'Fermé',
+    location_header:   '📍 *Adresse*',
+    contact_header:    '📞 *Nous Contacter*',
+    contact_phone:     '📱 WhatsApp / Téléphone',
+    contact_email:     '📧 E-mail',
+    contact_instagram: '📸 Instagram',
+    back_menu:         '🏠 Tapez *menu* pour revenir',
+    book_prompt:       '📅 Tapez *1* pour réserver',
+
+    days: ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],
+
+    calendar_invite_note: '📆 Une invitation de calendrier est jointe — appuyez dessus pour l\'enregistrer dans Google ou Apple Calendrier.',
+
+    // Appointment management (option 7)
+    manage_prompt:            '📋 *Gérer Rendez-vous*\n\nEntrez votre *code de réservation de 4 caractères* :\n\n_Tapez *0* pour revenir_',
+    manage_not_found:         '❌ Code de réservation introuvable. Vérifiez et réessayez, ou tapez *0* pour revenir.',
+    manage_invalid_status:    '⚠️ Ce rendez-vous est déjà *{status}* et ne peut pas être modifié. Tapez *menu* pour revenir.',
+    manage_header:            '📋 *Votre Rendez-vous*',
+    manage_option_1:          '📅 Reporter',
+    manage_option_2:          '❌ Annuler le Rendez-vous',
+    manage_cancel_confirm:    '⚠️ Êtes-vous sûr de vouloir *annuler* ce rendez-vous ?\n\nRépondez *OUI* pour annuler  |  *NON* pour le conserver',
+    manage_cancelled:         '✅ Votre rendez-vous a été annulé.\n\nNous espérons vous revoir bientôt ! 💈 Tapez *menu* pour revenir.',
+    manage_rescheduled:       '🔄 *Rendez-vous Reporté !*',
+    manage_reschedule_confirm:'Confirmez la nouvelle date et heure ?',
+    no_dates_available:       '😔 Aucune date disponible. Veuillez nous contacter directement.',
+
+    back_to_main_menu:  'Réservation annulée — vous êtes de retour au menu principal.',
+
+    // Group / family booking
+    group_size_prompt:  '👥 *Pour combien de personnes est ce rendez-vous ?*',
+    group_just_me:      'Juste moi',
+    group_people:       'personnes',
+    group_people_lower: 'personne(s)',
+    group_overflow_note:'({first} ensemble + {rest} juste après)',
+    group_slots_note:   '{count} barbiers disponibles simultanément',
+    group_invalid:      'Veuillez entrer un nombre entre *1* et *{max}*.',
+    group_follow_up:    'suite du rendez-vous',
+    booked_header_group:'🎉 *Réservation Groupée Confirmée ! ({count} personnes)*',
+    confirm_group:      '👥 Groupe',
+
+    // Barber training
+    menu_training:      '🎓 Formation Barbier',
+    training_unavailable: '😔 Aucun matériel de formation n\'est disponible pour le moment. Revenez bientôt !',
+
+    // Photo gallery
+    menu_gallery:       '📸 Voir Styles & Galerie',
+    gallery_header:     '📸 *Nos Styles*\n\nChoisissez une catégorie :',
+    gallery_no_tags:    '📸 Aucune photo disponible pour l\'instant. Revenez bientôt !',
+    gallery_no_photos:  '😔 Aucune photo trouvée pour ce style. Essayez une autre catégorie !',
+    gallery_sending:    '📸 Styles *{tag}* :',
+    gallery_more:       '_+{count} photos disponibles — venez nous rendre visite pour les voir toutes !_',
+    gallery_invalid:    'Veuillez répondre avec un numéro valide, ou *0* pour revenir.',
+
+    // Blocked customer
+    customer_blocked: '🚫 Votre accès au bot de réservation a été temporairement restreint. Veuillez nous contacter directement au *{phone}*.',
+
+    // Post-appointment survey
+    survey_invalid: 'Veuillez répondre avec un nombre entre *1* et *5*.',
+    survey_thanks:  '🙏 *Merci pour votre retour !*\n\n{stars} ({rating}/5)\n\nNous avons hâte de vous revoir ! 💈',
+
+    // Returning customer welcome
+    returning_welcome: '👋 *Bon retour, {name} !*\n\nRavi de vous revoir. Comment puis-je vous aider aujourd\'hui ? 💈',
+
+    // First-time customer welcome
+    new_customer_welcome: '🌟 *Bienvenue chez {shop_name} !*\n\nNous sommes ravis que vous nous ayez trouvés ! En tant que nouveau client, nous sommes prêts à vous offrir la meilleure expérience. Parcourez nos services ou réservez votre premier rendez-vous ! 💈',
+
+    // Out-of-scope freeform message at main menu
+    out_of_scope: '🤔 Cela dépasse un peu ce que je peux faire ici.\n\nPour des questions spécifiques, contactez notre équipe au *{phone}*.\n\nVoici ce que je peux *faire* pour vous :',
+
+    // Financial / discount query referral
+    finance_referral: '💰 Les questions sur les *tarifs, réductions ou paiements* sont gérées par notre direction — pas par le bot.\n\nContactez-les directement :\n📱 *{phone}*\n\nTapez *menu* pour revenir au menu principal.',
+
+    // Feedback
+    menu_feedback:             '💬 Plaintes & Suggestions',
+    feedback_header:           '💬 *Plaintes & Suggestions*\n\nQue souhaitez-vous faire ?',
+    feedback_option_complaint: '1️⃣ Déposer une Plainte',
+    feedback_option_suggestion:'2️⃣ Partager une Suggestion',
+    feedback_complaint_msg:    '📞 *Plaintes*\n\nPour les plaintes, veuillez nous contacter directement :\n📱 *{phone}*\n\nNous prenons toutes les plaintes au sérieux et vous répondrons dès que possible.\n\n🏠 Tapez *menu* pour revenir.',
+    feedback_suggestion_prompt:'💡 *Partagez votre Suggestion*\n\nTapez votre suggestion ci-dessous et nous la transmettrons à l\'équipe :\n\n_Tapez *0* pour revenir_',
+    feedback_suggestion_thanks: '✅ *Merci pour votre suggestion !*\n\nNous apprécions votre contribution et allons l\'examiner. 💈\n\n🏠 Tapez *menu* pour revenir.',
+    feedback_invalid:          'Veuillez répondre avec *1* ou *2*, ou tapez *0* pour revenir.',
+
+    yes_words:  ['oui','o','yes','y'],
+    no_words:   ['non','no','n'],
+    back_words: ['0','retour','back','b'],
+  },
+
+  // ── Portuguese (Português) ────────────────────────────────────────────────
+  pt: {
+    lang_name: 'Português',
+
+    cancelled:         '❌ Reserva cancelada. Digite *menu* quando estiver pronto! ✂️',
+    invalid_menu:      'Por favor responda com *1 – 9*.',
+    menu_language:     'Mudar Idioma',
+    menu_manage:       'Gerenciar Meu Agendamento',
+
+    welcome:           '💈 *Bem-vindo ao {shop_name}!*\n\nComo posso ajudá-lo hoje?',
+    menu_book:         '📅 Agendar Horário',
+    menu_services:     '💈 Nossos Serviços & Preços',
+    menu_hours:        '⏰ Horário de Funcionamento',
+    menu_location:     '📍 Localização',
+    menu_contact:      '📞 Contato',
+    menu_reply:        'Responda com um número para continuar.',
+
+    book_header:       '📅 *Agendar Horário*\n\nEscolha um serviço:',
+    services_header:   '💈 *Serviços & Preços*',
+    reply_number:      'Responda com um número',
+    reply_or_back:     'Responda com um número, ou *0* para voltar',
+    no_barbers_service:'😔 Desculpe, nenhum barbeiro disponível para *{service}*. Por favor contate-nos diretamente.',
+    invalid_choice:    'Por favor responda com *1 – {max}*.',
+
+    choose_barber:     '💈 *Escolha seu barbeiro:*',
+    any_barber:        '🎲 Qualquer Barbeiro Disponível',
+    service_label:     'Serviço',
+
+    select_date:       '📅 *Escolha uma Data*',
+    no_slots_date:     '😔 Nenhum horário disponível em *{date}*. Por favor escolha outro dia.',
+
+    select_time:       '⏰ *Horários Disponíveis*',
+
+    enter_name:        '👤 *Quase lá!*\n\nDigite seu *nome completo* para confirmar sua reserva:',
+    name_too_short:    '✏️ Por favor insira seu *nome completo* para continuar.',
+
+    confirm_header:    '✅ *Resumo do Agendamento*',
+    confirm_name:      '👤 Nome',
+    confirm_barber:    '💈 Barbeiro',
+    confirm_service:   'Serviço',
+    confirm_date:      '📅 Data',
+    confirm_time:      '⏰ Hora',
+    confirm_duration:  '⏱️ Duração',
+    confirm_price:     '💰 Preço',
+    confirm_prompt:    'Responda *SIM* para confirmar ✅  |  *NÃO* para cancelar ❌',
+    confirm_invalid:   'Por favor responda *SIM* para confirmar ou *NÃO* para cancelar.',
+    confirm_cancel:    '❌ Reserva cancelada. Digite *1* para recomeçar ou *menu* para o menu principal.',
+
+    booked_header:     '🎉 *Agendamento Confirmado!*',
+    booked_code:       '🎫 *Código de Reserva: {code}*',
+    booked_code_note:  '_Guarde este código — pode ser necessário para reagendar._',
+    booked_barber:     '💈 Barbeiro: *{barber}*',
+    booked_footer_default: 'Estamos ansiosos para vê-lo! ✂️',
+
+    hours_header:      '⏰ *Horário de Funcionamento*',
+    hours_back:        '🏠 Digite *menu* para voltar',
+    hours_closed:      'Fechado',
+    location_header:   '📍 *Localização*',
+    contact_header:    '📞 *Contato*',
+    contact_phone:     '📱 WhatsApp / Telefone',
+    contact_email:     '📧 E-mail',
+    contact_instagram: '📸 Instagram',
+    back_menu:         '🏠 Digite *menu* para voltar',
+    book_prompt:       '📅 Digite *1* para agendar',
+
+    days: ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'],
+
+    calendar_invite_note: '📆 Um convite de calendário está anexado — toque para salvar no Google ou Apple Calendário.',
+
+    manage_prompt:            '📋 *Gerenciar Agendamento*\n\nInsira seu *código de reserva de 4 caracteres*:\n\n_Digite *0* para voltar_',
+    manage_not_found:         '❌ Código de reserva não encontrado. Verifique e tente novamente, ou digite *0* para voltar.',
+    manage_invalid_status:    '⚠️ Este agendamento já está *{status}* e não pode ser modificado. Digite *menu* para voltar.',
+    manage_header:            '📋 *Seu Agendamento*',
+    manage_option_1:          '📅 Reagendar',
+    manage_option_2:          '❌ Cancelar Agendamento',
+    manage_cancel_confirm:    '⚠️ Tem certeza que deseja *cancelar* este agendamento?\n\nResponda *SIM* para cancelar  |  *NÃO* para manter',
+    manage_cancelled:         '✅ Seu agendamento foi cancelado.\n\nEsperamos vê-lo em breve! 💈 Digite *menu* para voltar.',
+    manage_rescheduled:       '🔄 *Agendamento Reagendado!*',
+    manage_reschedule_confirm:'Confirmar nova data e hora?',
+    no_dates_available:       '😔 Nenhuma data disponível. Por favor contate-nos diretamente.',
+
+    back_to_main_menu:  'Reserva cancelada — você voltou ao menu principal.',
+
+    group_size_prompt:  '👥 *Para quantas pessoas é este agendamento?*',
+    group_just_me:      'Só eu',
+    group_people:       'pessoas',
+    group_people_lower: 'pessoa(s)',
+    group_overflow_note:'({first} juntos + {rest} logo após)',
+    group_slots_note:   '{count} barbeiros disponíveis simultaneamente',
+    group_invalid:      'Por favor insira um número entre *1* e *{max}*.',
+    group_follow_up:    'continuação do agendamento',
+    booked_header_group:'🎉 *Agendamento em Grupo Confirmado! ({count} pessoas)*',
+    confirm_group:      '👥 Grupo',
+
+    menu_training:      '🎓 Treinamento de Barbeiro',
+    training_unavailable: '😔 Nenhum material de treinamento disponível no momento. Volte em breve!',
+
+    menu_gallery:       '📸 Ver Estilos & Galeria',
+    gallery_header:     '📸 *Nossos Estilos*\n\nEscolha uma categoria:',
+    gallery_no_tags:    '📸 Nenhuma foto disponível por enquanto. Volte em breve!',
+    gallery_no_photos:  '😔 Nenhuma foto encontrada para este estilo. Tente outra categoria!',
+    gallery_sending:    '📸 Estilos *{tag}*:',
+    gallery_more:       '_+{count} fotos disponíveis — venha nos visitar para ver todas!_',
+    gallery_invalid:    'Por favor responda com um número válido, ou *0* para voltar.',
+
+    customer_blocked: '🚫 Seu acesso ao bot de reservas foi temporariamente restrito. Por favor contate-nos diretamente no *{phone}*.',
+
+    survey_invalid: 'Por favor responda com um número entre *1* e *5*.',
+    survey_thanks:  '🙏 *Obrigado pelo seu feedback!*\n\n{stars} ({rating}/5)\n\nEsperamos vê-lo novamente! 💈',
+
+    returning_welcome: '👋 *Bem-vindo de volta, {name}!*\n\nQue bom ver você novamente. Como posso ajudá-lo hoje? 💈',
+
+    new_customer_welcome: '🌟 *Bem-vindo ao {shop_name}!*\n\nQue bom que nos encontrou! Como novo cliente, estamos prontos para oferecer a melhor experiência. Explore nossos serviços ou agende seu primeiro horário! 💈',
+
+    out_of_scope: '🤔 Isso está um pouco além do que posso fazer aqui.\n\nPara perguntas específicas, contate nossa equipe no *{phone}*.\n\nAqui está o que posso *fazer* por você:',
+
+    finance_referral: '💰 Perguntas sobre *tarifas, descontos ou pagamentos* são tratadas pela nossa gerência — não pelo bot.\n\nContate-os diretamente:\n📱 *{phone}*\n\nDigite *menu* para voltar ao menu principal.',
+
+    // Feedback
+    menu_feedback:             '💬 Reclamações & Sugestões',
+    feedback_header:           '💬 *Reclamações & Sugestões*\n\nO que gostaria de fazer?',
+    feedback_option_complaint: '1️⃣ Fazer uma Reclamação',
+    feedback_option_suggestion:'2️⃣ Compartilhar uma Sugestão',
+    feedback_complaint_msg:    '📞 *Reclamações*\n\nPara reclamações, entre em contato diretamente:\n📱 *{phone}*\n\nLevamos todas as reclamações a sério e entraremos em contato o mais breve possível.\n\n🏠 Digite *menu* para voltar.',
+    feedback_suggestion_prompt:'💡 *Compartilhe sua Sugestão*\n\nDigite sua sugestão abaixo e a enviaremos para a equipe:\n\n_Digite *0* para voltar_',
+    feedback_suggestion_thanks: '✅ *Obrigado pela sua sugestão!*\n\nAgradecemos sua contribuição e vamos analisá-la. 💈\n\n🏠 Digite *menu* para voltar.',
+    feedback_invalid:          'Por favor responda com *1* ou *2*, ou digite *0* para voltar.',
+
+    yes_words:  ['sim','s','yes','y'],
+    no_words:   ['não','nao','no','n'],
+    back_words: ['0','voltar','back','b'],
+  },
+};
+
+/** Get a translation string, filling in {placeholders} */
+function t(lang, key, vars = {}) {
+  const strings = TRANSLATIONS[lang] || TRANSLATIONS.en;
+  let str = strings[key] ?? TRANSLATIONS.en[key] ?? key;
+  for (const [k, v] of Object.entries(vars)) {
+    str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+  }
+  return str;
+}
+
+const LANG_MENU_PROMPT_DEFAULT = '🌐 *Kies uw taal:*';
+
+/** The language-selection menu shown to every new user (prompt line is configurable via settings) */
+function buildLanguageMenu() {
+  const q = require('../db/queries');
+  const prompt = q.getSetting('lang_menu_prompt') || LANG_MENU_PROMPT_DEFAULT;
+  return [
+    prompt,
+    '',
+    '1️⃣  🇸🇷 Nederlands',
+    '2️⃣  🇬🇧 English',
+    '3️⃣  🇪🇸 Español',
+    '4️⃣  🇫🇷 Français',
+    '5️⃣  🇧🇷 Português',
+  ].join('\n');
+}
+
+const LANG_MAP = { '1': 'nl', '2': 'en', '3': 'es', '4': 'fr', '5': 'pt' };
+const SUPPORTED = Object.keys(TRANSLATIONS);
+
+module.exports = { t, buildLanguageMenu, LANG_MAP, SUPPORTED, TRANSLATIONS };

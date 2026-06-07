@@ -1,0 +1,3363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barbershop Admin</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Barbershop">
+  <link rel="apple-touch-icon" href="/icons/icon.svg">
+
+  <!-- QR Scanner library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .sidebar-link { display:flex; align-items:center; gap:0.75rem; padding:0.625rem 1rem; border-radius:0.5rem; color:#fff; font-size:0.875rem; font-weight:600; transition:background 0.15s, color 0.15s; width:100%; text-align:left; }
+    .sidebar-link:hover { background:rgba(255,255,255,0.1); }
+    .sidebar-link.active { background:rgba(245,158,11,0.2); color:#fbbf24; }
+    .badge { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium; }
+    .badge-green  { @apply bg-emerald-100 text-emerald-700; }
+    .badge-red    { @apply bg-red-100 text-red-700; }
+    .badge-gray   { @apply bg-slate-100 text-slate-600; }
+    .badge-orange { @apply bg-orange-100 text-orange-700; }
+    .badge-blue   { @apply bg-blue-100 text-blue-700; }
+    .card { @apply bg-white rounded-2xl shadow-sm border border-slate-100 p-6; }
+    .btn-primary { @apply bg-amber-500 hover:bg-amber-400 text-white font-semibold px-4 py-2 rounded-xl transition text-sm; }
+    .btn-secondary { @apply bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded-xl transition text-sm; }
+    .btn-danger { @apply bg-red-500 hover:bg-red-400 text-white font-semibold px-4 py-2 rounded-xl transition text-sm; }
+    .input { @apply w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400; }
+    .label { @apply block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1; }
+    .modal-overlay { @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4; }
+    .modal { @apply bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6; }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans" x-data="app()" x-cloak>
+
+<!-- ── Login Screen ───────────────────────────────────────────────────────── -->
+<div x-show="!authenticated" class="min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-2xl shadow-xl p-10 w-full max-w-sm">
+    <div class="text-center mb-8">
+      <div class="text-5xl mb-3">💈</div>
+      <h1 class="text-2xl font-bold text-slate-800" x-text="shopName || 'Barbershop Admin'"></h1>
+      <p class="text-slate-500 text-sm mt-1">Admin Dashboard</p>
+    </div>
+    <form @submit.prevent="login">
+      <label class="label">Password</label>
+      <input type="password" x-model="loginPassword" class="input mb-4" placeholder="Enter admin password" required>
+      <p x-show="loginError" class="text-red-500 text-sm mb-3" x-text="loginError"></p>
+      <button type="submit" class="btn-primary w-full py-2.5">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Main App ───────────────────────────────────────────────────────────── -->
+<div x-show="authenticated" class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-slate-900 flex flex-col flex-shrink-0 overflow-y-auto">
+    <div class="p-5 border-b border-white/10">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">💈</span>
+        <div>
+          <div class="text-white font-bold text-sm leading-tight" x-text="shopName || 'Barbershop'"></div>
+          <div class="text-slate-400 text-xs">Admin Dashboard</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 p-3 space-y-1">
+      <button @click="nav('dashboard')"   :class="page==='dashboard'   ? 'active' : ''" class="sidebar-link w-full text-left">📊 Dashboard</button>
+      <button @click="nav('appointments')" :class="page==='appointments' ? 'active' : ''" class="sidebar-link w-full text-left">📅 Appointments</button>
+      <button @click="nav('employees')"   :class="page==='employees'   ? 'active' : ''" class="sidebar-link w-full text-left">👥 Employees</button>
+      <button @click="nav('hours')"       :class="page==='hours'       ? 'active' : ''" class="sidebar-link w-full text-left">⏰ Work Hours</button>
+      <button @click="nav('leave')"        :class="page==='leave'        ? 'active' : ''" class="sidebar-link w-full text-left">🏖️ Employee Leave</button>
+      <button @click="nav('blocks')"      :class="page==='blocks'      ? 'active' : ''" class="sidebar-link w-full text-left">🚫 Closed Dates</button>
+      <button @click="nav('services')"    :class="page==='services'    ? 'active' : ''" class="sidebar-link w-full text-left">✂️ Services</button>
+      <button @click="nav('gallery')"      :class="page==='gallery'      ? 'active' : ''" class="sidebar-link w-full text-left">📸 Gallery</button>
+      <button @click="nav('training')"    :class="page==='training'    ? 'active' : ''" class="sidebar-link w-full text-left">🎓 Training</button>
+      <button @click="nav('menu')"        :class="page==='menu'        ? 'active' : ''" class="sidebar-link w-full text-left">📋 Menu Order</button>
+      <button @click="nav('customers')"   :class="page==='customers'   ? 'active' : ''" class="sidebar-link w-full text-left">👤 Customers</button>
+      <button @click="nav('keywords')"    :class="page==='keywords'    ? 'active' : ''" class="sidebar-link w-full text-left">🔑 Keywords</button>
+      <button @click="nav('messages')"    :class="page==='messages'    ? 'active' : ''" class="sidebar-link w-full text-left">✉️ Bot Messages</button>
+      <button @click="nav('settings')"    :class="page==='settings'    ? 'active' : ''" class="sidebar-link w-full text-left">⚙️ Settings</button>
+    </nav>
+
+    <div class="p-4 border-t border-white/10">
+      <!-- Bot pause toggle -->
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-white text-xs font-semibold">Bot Active</span>
+        <button @click="toggleBotPause()"
+          :class="botPaused ? 'bg-slate-600' : 'bg-amber-500'"
+          class="relative inline-flex h-6 w-11 rounded-full transition-colors">
+          <span :class="botPaused ? 'translate-x-1' : 'translate-x-6'"
+            class="inline-block h-4 w-4 rounded-full bg-white shadow mt-1 transition-transform"></span>
+        </button>
+      </div>
+      <!-- WhatsApp connection status -->
+      <div class="flex items-center gap-2 mb-3">
+        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :class="waStatusLabel.dot"></span>
+        <span class="text-white/70 text-xs">WhatsApp: <span x-text="waStatusLabel.text"></span></span>
+      </div>
+      <button @click="logout()" class="sidebar-link" style="color:rgba(255,255,255,0.55)" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='rgba(255,255,255,0.55)'">🚪 Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 overflow-y-auto">
+
+    <!-- ── DASHBOARD ─────────────────────────────────────────────── -->
+    <div x-show="page === 'dashboard'" class="p-8">
+      <h2 class="text-2xl font-bold text-slate-800 mb-6">Dashboard</h2>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="card text-center">
+          <div class="text-3xl font-bold text-amber-500" x-text="stats.today ?? '—'"></div>
+          <div class="text-slate-500 text-sm mt-1">Today's Bookings</div>
+        </div>
+        <div class="card text-center">
+          <div class="text-3xl font-bold text-blue-500" x-text="stats.week ?? '—'"></div>
+          <div class="text-slate-500 text-sm mt-1">This Week</div>
+        </div>
+        <div class="card text-center">
+          <div class="text-3xl font-bold text-emerald-500" x-text="settings.currency + ' ' + (stats.revenue?.toFixed(2) ?? '0')"></div>
+          <div class="text-slate-500 text-sm mt-1">Today's Revenue</div>
+        </div>
+        <div class="card text-center">
+          <div class="text-3xl font-bold text-purple-500" x-text="stats.upcoming ?? '—'"></div>
+          <div class="text-slate-500 text-sm mt-1">Upcoming</div>
+        </div>
+      </div>
+
+      <!-- WhatsApp QR / Status card (shown when bot isn't connected) -->
+      <div x-show="waStatus.status !== 'ready' && waStatus.status !== 'loading'"
+           class="card mb-8 border-amber-200 bg-amber-50">
+        <div class="flex items-start gap-5">
+
+          <!-- Left panel: QR image or state icon -->
+          <div class="flex-shrink-0 rounded-xl border border-amber-200 bg-white overflow-hidden" style="width:176px;min-height:176px;display:flex;align-items:center;justify-content:center;">
+
+            <!-- QR image — served as PNG via /api/whatsapp/qr?t=<timestamp>.
+                 The ?t= cache-buster changes every time a new QR arrives so the
+                 browser is forced to fetch the latest image (no Alpine tricks needed). -->
+            <template x-if="waStatus.status === 'qr'">
+              <img :src="'/api/whatsapp/qr?t=' + (waStatus.lastUpdated || Date.now())"
+                   alt="WhatsApp QR code"
+                   style="width:176px;height:176px;display:block;">
+            </template>
+
+            <!-- Spinner (initialising / authenticated) -->
+            <svg x-show="!waStatus.qrDataUrl && (waStatus.status === 'initializing' || waStatus.status === 'authenticated')"
+                 class="w-10 h-10 text-amber-400 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+
+            <span x-show="!waStatus.qrDataUrl && waStatus.status === 'disconnected'" class="text-5xl">⚠️</span>
+            <span x-show="!waStatus.qrDataUrl && waStatus.status === 'not-running'"  class="text-5xl">💤</span>
+          </div>
+
+          <!-- Right panel: text + action button — x-show so Alpine updates text in place -->
+          <div class="flex-1 min-w-0 py-2">
+            <h3 class="text-base font-bold text-slate-800 mb-1">
+              📱 WhatsApp Bot
+              <span class="ml-2 text-sm font-normal" :class="{
+                'text-yellow-600': ['qr','initializing','authenticated'].includes(waStatus.status),
+                'text-red-500':    waStatus.status === 'disconnected',
+                'text-slate-500':  waStatus.status === 'not-running',
+              }" x-text="waStatusLabel.text"></span>
+            </h3>
+
+            <div x-show="waStatus.status === 'qr'">
+              <p class="text-slate-600 text-sm mb-2">Open WhatsApp on the barber's phone, go to <strong>Linked Devices → Link a Device</strong>, and scan the QR code.</p>
+              <p class="text-xs text-slate-400 mb-1">Refreshes automatically every ~20 seconds.</p>
+              <p class="text-xs text-slate-300 mb-4" x-text="waStatus.lastUpdated ? 'Last updated: ' + new Date(waStatus.lastUpdated).toLocaleTimeString() : ''"></p>
+              <button @click="reconnectBot()" class="btn-secondary text-xs">🔄 Force Refresh</button>
+            </div>
+
+            <div x-show="waStatus.status === 'initializing' || waStatus.status === 'authenticated'">
+              <p class="text-slate-600 text-sm mb-4">Connecting to WhatsApp — please wait…</p>
+              <button @click="loadWhatsappStatus()" class="btn-secondary text-xs">↺ Check status</button>
+            </div>
+
+            <div x-show="waStatus.status === 'disconnected'">
+              <p class="text-slate-600 text-sm mb-2">The WhatsApp connection was lost.</p>
+              <p class="text-xs text-slate-400 mb-4">If reconnecting repeatedly fails, use "Change Number" below to wipe the session and re-scan a fresh QR.</p>
+              <button @click="reconnectBot()" class="btn-primary text-xs">🔄 Reconnect Bot</button>
+            </div>
+
+            <div x-show="waStatus.status === 'not-running'">
+              <p class="text-slate-600 text-sm mb-4">The WhatsApp bot is not connected. Click the button below to start it — a QR code will appear for scanning.</p>
+              <button @click="startBot()" class="btn-primary text-xs">▶️ Start Bot</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Today's schedule -->
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold text-slate-800">📅 Today's Schedule</h3>
+          <button @click="openWalkInModal()" class="btn-primary text-sm">👤 Walk-in</button>
+        </div>
+        <div x-show="todayAppointments.length === 0" class="text-slate-400 text-center py-8">No appointments today</div>
+        <div class="space-y-3">
+          <template x-for="a in todayAppointments" :key="a.id">
+            <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 border border-slate-100">
+              <div class="text-sm font-mono font-bold text-slate-600 w-20 flex-shrink-0" x-text="fmtTime(a.start_time)"></div>
+              <div class="w-3 h-3 rounded-full flex-shrink-0" :style="`background:${a.employee_color||'#94a3b8'}`"></div>
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-slate-800 text-sm flex items-center gap-2">
+                  <span x-text="a.customer_name"></span>
+                  <span class="text-xs font-mono text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded" x-text="'#' + (a.booking_code || '?')"></span>
+                </div>
+                <div class="text-slate-500 text-xs" x-text="`${a.service_emoji} ${a.service_name} · ${a.employee_name || 'Unassigned'}`"></div>
+                <div x-show="a.customer_phone" class="text-slate-400 text-xs mt-0.5" x-text="'📱 ' + (a.customer_phone || '').replace(/@\S+$/, '')"></div>
+              </div>
+              <div>
+                <span class="badge" :class="statusBadge(a.status)" x-text="a.status"></span>
+              </div>
+              <div class="flex gap-2">
+                <button @click="markStatus(a.id, 'completed')" title="Mark completed" class="text-emerald-500 hover:text-emerald-600 text-lg">✅</button>
+                <button @click="markStatus(a.id, 'no-show')"   title="Mark no-show"   class="text-orange-400 hover:text-orange-500 text-lg">👻</button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+      <!-- Human Takeover panel — shown when any chats are paused -->
+      <div x-show="pausedChats.length > 0" class="card border-blue-200 bg-blue-50 mt-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-blue-600 font-bold">👤 Human Takeover Active</span>
+          <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold" x-text="pausedChats.length + ' chat(s)'"></span>
+        </div>
+        <div class="space-y-2">
+          <template x-for="c in pausedChats" :key="c.chatId">
+            <div class="flex items-center justify-between bg-white rounded-xl px-4 py-2 border border-blue-100">
+              <div>
+                <span class="font-mono text-sm text-slate-700" x-text="'📱 ' + c.phone"></span>
+                <span class="text-xs text-slate-400 ml-2" x-text="'since ' + new Date(c.since).toLocaleTimeString()"></span>
+              </div>
+              <button @click="releaseChat(c.chatId)" class="btn-primary text-xs py-1 px-3">🤖 Release to Bot</button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── APPOINTMENTS ──────────────────────────────────────────── -->
+    <div x-show="page === 'appointments'" class="p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Appointments</h2>
+        <div class="flex items-center gap-2">
+          <button @click="syncAllCalendar()"
+                  :disabled="calSyncing"
+                  class="btn-secondary text-sm flex items-center gap-1"
+                  title="Re-sync all upcoming appointments to the currently configured Google Calendar">
+            <span x-text="calSyncing ? '⏳ Syncing…' : '📅 Sync to Calendar'"></span>
+          </button>
+          <button @click="openNewApptModal()" class="btn-primary">+ New Appointment</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-6">
+        <div class="flex flex-wrap gap-4">
+          <!-- Search -->
+          <div class="flex-1 min-w-52">
+            <label class="label">Search</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+              <input type="text" x-model="apptSearch"
+                     class="input pl-8 w-full"
+                     placeholder="Name, booking code, phone…">
+            </div>
+          </div>
+          <div>
+            <label class="label">Date</label>
+            <input type="date" x-model="apptFilter.date" @change="loadAppointments()" class="input w-44">
+          </div>
+          <div>
+            <label class="label">Barber</label>
+            <select x-model="apptFilter.employee_id" @change="loadAppointments()" class="input w-44">
+              <option value="">All Barbers</option>
+              <template x-for="e in employees" :key="e.id">
+                <option :value="e.id" x-text="e.name"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="label">Status</label>
+            <select x-model="apptFilter.status" @change="loadAppointments()" class="input w-44">
+              <option value="">All Statuses</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="no-show">No-Show</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button @click="apptFilter={date:'',employee_id:'',status:''}; apptSearch=''; loadAppointments()" class="btn-secondary">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div x-show="appointments.filter(a => {
+              const q = apptSearch.toLowerCase();
+              return !q ||
+                (a.customer_name  || '').toLowerCase().includes(q) ||
+                (a.booking_code   || '').toLowerCase().includes(q) ||
+                (a.customer_phone || '').toLowerCase().includes(q) ||
+                (a.service_name   || '').toLowerCase().includes(q) ||
+                (a.employee_name  || '').toLowerCase().includes(q);
+            }).length === 0"
+             class="text-slate-400 text-center py-8">No appointments found</div>
+        <div class="overflow-x-auto">
+          <table x-show="appointments.length > 0" class="w-full text-sm">
+            <thead>
+              <tr class="text-left border-b border-slate-100">
+                <th class="pb-3 text-slate-500 font-medium">Date & Time</th>
+                <th class="pb-3 text-slate-500 font-medium">Customer</th>
+                <th class="pb-3 text-slate-500 font-medium">Service</th>
+                <th class="pb-3 text-slate-500 font-medium">Barber</th>
+                <th class="pb-3 text-slate-500 font-medium">Price</th>
+                <th class="pb-3 text-slate-500 font-medium">Rating</th>
+                <th class="pb-3 text-slate-500 font-medium">Status</th>
+                <th class="pb-3 text-slate-500 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+              <template x-for="a in appointments.filter(a => {
+                  const q = apptSearch.toLowerCase();
+                  return !q ||
+                    (a.customer_name  || '').toLowerCase().includes(q) ||
+                    (a.booking_code   || '').toLowerCase().includes(q) ||
+                    (a.customer_phone || '').toLowerCase().includes(q) ||
+                    (a.service_name   || '').toLowerCase().includes(q) ||
+                    (a.employee_name  || '').toLowerCase().includes(q);
+                })" :key="a.id">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 font-mono text-xs" x-text="fmtDateTime(a.start_time)"></td>
+                  <td class="py-3">
+                    <div class="font-medium text-slate-800" x-text="a.customer_name"></div>
+                    <div class="text-slate-400 text-xs font-mono tracking-widest" x-text="'#' + (a.booking_code || '—')"></div>
+                    <div x-show="a.customer_phone" class="text-slate-400 text-xs mt-0.5" x-text="'📱 ' + (a.customer_phone || '').replace(/@\S+$/, '')"></div>
+                  </td>
+                  <td class="py-3" x-text="`${a.service_emoji} ${a.service_name}`"></td>
+                  <td class="py-3">
+                    <div class="flex items-center gap-2">
+                      <div class="w-2.5 h-2.5 rounded-full" :style="`background:${a.employee_color||'#94a3b8'}`"></div>
+                      <span x-text="a.employee_name || '—'"></span>
+                    </div>
+                  </td>
+                  <td class="py-3" x-text="`${settings.currency} ${a.service_price}`"></td>
+                  <td class="py-3 text-sm">
+                    <span x-show="a.rating" x-text="'⭐'.repeat(a.rating) + ' (' + a.rating + '/5)'"></span>
+                    <span x-show="!a.rating" class="text-slate-300 text-xs">—</span>
+                  </td>
+                  <td class="py-3"><span class="badge" :class="statusBadge(a.status)" x-text="a.status"></span></td>
+                  <td class="py-3">
+                    <div class="flex items-center gap-2">
+                      <select @change="markStatus(a.id, $event.target.value); $event.target.value=''" class="input py-1 text-xs w-32">
+                        <option value="">Change status…</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="no-show">No-Show</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                      <!-- Sync to Google Calendar — shown when event is missing -->
+                      <button x-show="!a.google_event_id && a.status !== 'cancelled'"
+                        @click="syncToCalendar(a)"
+                        title="Sync to Google Calendar"
+                        class="text-slate-400 hover:text-amber-500 transition text-lg leading-none"
+                        style="font-size:1.1rem">📅</button>
+                      <!-- Link to existing calendar event -->
+                      <a x-show="!!a.google_event_id"
+                        x-bind:href="a.google_event_link || 'https://calendar.google.com'"
+                        target="_blank"
+                        title="View in Google Calendar"
+                        class="text-emerald-500 hover:text-emerald-600 transition text-lg leading-none">✅</a>
+                      <!-- QR Check-In button -->
+                      <button @click="showQR(a)"
+                        title="Show Check-In QR Code"
+                        class="text-slate-400 hover:text-blue-500 transition text-lg leading-none">🔲</button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── QR SCANNER MODAL ───────────────────────────────────────── -->
+    <template x-if="showScanModal">
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.8)">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <h3 class="text-lg font-bold text-slate-800">📷 Scan Customer QR</h3>
+            <button @click="stopScanner()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+          </div>
+          <!-- Camera viewfinder -->
+          <div id="qr-reader" class="w-full" x-init="$nextTick(() => initScanner())"></div>
+          <div class="px-5 py-3 text-center">
+            <p class="text-xs text-slate-400" x-show="!scanError">Point the camera at the customer's QR code</p>
+            <p class="text-sm text-red-500 font-medium" x-show="scanError" x-text="scanError"></p>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ── QR CHECK-IN MODAL ──────────────────────────────────────── -->
+    <template x-if="showQRModal">
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5)"
+           @click.self="showQRModal=false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-slate-800">🔲 Check-In QR</h3>
+            <button @click="showQRModal=false" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+          </div>
+          <div x-show="qrLoading" class="py-12 text-slate-400">Generating QR…</div>
+          <div x-show="!qrLoading && qrData">
+            <img :src="qrData.dataUrl" alt="QR Code" class="mx-auto rounded-xl mb-4" style="width:200px;height:200px">
+            <p class="text-sm font-medium text-slate-700 mb-1" x-text="qrAppt?.customer_name"></p>
+            <p class="text-xs text-slate-500 mb-3" x-text="(qrAppt?.service_emoji || '') + ' ' + (qrAppt?.service_name || '')"></p>
+            <div class="bg-slate-100 rounded-xl px-4 py-2 font-mono text-sm text-slate-600 mb-4" x-text="'#' + (qrAppt?.booking_code || '')"></div>
+            <div x-show="!settings.shop_url" class="text-xs text-amber-600 bg-amber-50 rounded-lg p-2 mb-3">
+              ⚠️ Set your <strong>Shop URL</strong> in Settings → Integrations for fully functional QR scanning.
+            </div>
+            <a :href="qrData.checkUrl" target="_blank" class="text-xs text-blue-500 underline break-all" x-text="qrData.checkUrl"></a>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ── NEW APPOINTMENT MODAL ───────────────────────────────────── -->
+    <template x-if="showNewApptModal">
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.4)">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex overflow-hidden" style="max-height:90vh" @click.stop>
+
+          <!-- LEFT: Form -->
+          <form @submit.prevent="saveNewAppt()" class="flex flex-col flex-1 p-8 overflow-y-auto">
+            <h3 class="text-xl font-bold text-slate-800 mb-6">New Appointment</h3>
+            <div class="space-y-4 flex-1">
+              <div>
+                <label class="label">Customer Name *</label>
+                <input type="text" x-model="newApptForm.customer_name" class="input w-full" required placeholder="e.g. John Smith">
+              </div>
+              <div>
+                <label class="label">Phone Number *</label>
+                <input type="text" x-model="newApptForm.customer_phone" class="input w-full" required placeholder="e.g. 5978001234">
+              </div>
+              <div>
+                <label class="label">Service *</label>
+                <select x-model="newApptForm.service_id" @change="onNewApptServiceChange()" class="input w-full" required>
+                  <option value="">Select a service…</option>
+                  <template x-for="s in services.filter(s=>s.is_active)" :key="s.id">
+                    <option :value="s.id" x-text="`${s.emoji} ${s.name} (${settings.currency} ${s.price}, ${s.duration} min)`"></option>
+                  </template>
+                </select>
+              </div>
+              <div>
+                <label class="label">Barber *</label>
+                <div x-show="!newApptForm.service_id" class="text-slate-400 text-sm py-2">Select a service first</div>
+                <template x-if="newApptForm.service_id">
+                  <div>
+                    <select x-model="newApptForm.employee_id" @change="onNewApptServiceChange()" class="input w-full" required>
+                      <option value="">Select a barber…</option>
+                      <template x-for="e in employeesForService(newApptForm.service_id)" :key="e.id">
+                        <option :value="e.id" x-text="e.name"></option>
+                      </template>
+                    </select>
+                    <p class="text-xs text-slate-400 mt-1"
+                       x-show="employeesForService(newApptForm.service_id).length === 0"
+                       class="text-amber-600">⚠️ No barbers available for this service.</p>
+                  </div>
+                </template>
+              </div>
+              <div>
+                <label class="label">Date *</label>
+                <input type="date" x-model="newApptForm.date" @change="onNewApptServiceChange()" :min="new Date().toISOString().slice(0,10)" class="input w-full" required>
+              </div>
+              <div>
+                <label class="label">Time *</label>
+                <div x-show="!newApptForm.service_id || !newApptForm.employee_id || !newApptForm.date"
+                  class="text-slate-400 text-sm py-2">Select a service, barber and date first</div>
+                <div x-show="newApptForm.service_id && newApptForm.employee_id && newApptForm.date">
+                  <div x-show="newApptSlotsLoading" class="text-slate-400 text-sm py-2">Loading available slots…</div>
+                  <select x-show="!newApptSlotsLoading && newApptSlots.length > 0"
+                    x-model="newApptForm.time" class="input w-full">
+                    <option value="">Pick a time…</option>
+                    <template x-for="slot in newApptSlots" :key="slot">
+                      <option :value="slot" x-text="slot"></option>
+                    </template>
+                  </select>
+                  <div x-show="!newApptSlotsLoading && newApptSlots.length === 0"
+                    class="text-amber-600 text-sm py-2">⚠️ No available slots for this barber on that date.</div>
+                </div>
+              </div>
+              <div>
+                <label class="label">Notes</label>
+                <input type="text" x-model="newApptForm.notes" class="input w-full" placeholder="Optional notes…">
+              </div>
+            </div>
+            <div x-show="newApptError" class="text-red-500 text-sm mt-4" x-text="newApptError"></div>
+            <div class="flex gap-3 justify-end mt-6">
+              <button type="button" @click="showNewApptModal=false" class="btn-secondary">Cancel</button>
+              <button type="submit" :disabled="newApptSaving" class="btn-primary">
+                <span x-show="!newApptSaving">Save & Sync to Calendar</span>
+                <span x-show="newApptSaving">Saving…</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- RIGHT: Barber schedule for selected date -->
+          <div class="w-72 bg-slate-50 border-l border-slate-200 flex flex-col flex-shrink-0">
+            <div class="px-5 py-5 border-b border-slate-200">
+              <div class="font-semibold text-slate-700 text-sm">
+                <span x-show="!newApptForm.employee_id || !newApptForm.date" class="text-slate-400">Pick a barber &amp; date to see their schedule</span>
+                <template x-if="newApptForm.employee_id && newApptForm.date">
+                  <span>
+                    📅 <span x-text="employees.find(e=>String(e.id)===String(newApptForm.employee_id))?.name || ''"></span>
+                    — <span x-text="new Date(newApptForm.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})"></span>
+                  </span>
+                </template>
+              </div>
+            </div>
+            <div class="flex-1 overflow-y-auto px-5 py-4">
+              <!-- Loading -->
+              <div x-show="newApptScheduleLoading" class="text-slate-400 text-sm text-center py-8">Loading…</div>
+              <!-- No barber/date selected -->
+              <div x-show="!newApptForm.employee_id || !newApptForm.date" class="text-center py-12">
+                <div class="text-3xl mb-2">🗓️</div>
+                <div class="text-slate-400 text-xs">Schedule appears here</div>
+              </div>
+              <!-- Schedule loaded -->
+              <template x-if="!newApptScheduleLoading && newApptForm.employee_id && newApptForm.date">
+                <div>
+                  <div x-show="newApptDaySchedule.length === 0" class="text-center py-8">
+                    <div class="text-2xl mb-2">✨</div>
+                    <div class="text-slate-400 text-xs">No bookings yet — day is open</div>
+                  </div>
+                  <div class="space-y-2">
+                    <template x-for="appt in newApptDaySchedule" :key="appt.id">
+                      <div class="bg-white rounded-xl p-3 border border-slate-200 text-xs">
+                        <div class="flex items-center gap-2 mb-1">
+                          <div class="w-2 h-2 rounded-full flex-shrink-0" :style="`background:${employees.find(e=>String(e.id)===String(appt.employee_id))?.color||'#94a3b8'}`"></div>
+                          <span class="font-semibold text-slate-700" x-text="fmtTime(appt.start_time) + ' – ' + fmtTime(appt.end_time)"></span>
+                        </div>
+                        <div class="text-slate-600 font-medium" x-text="appt.customer_name"></div>
+                        <div class="text-slate-400" x-text="`${appt.service_emoji} ${appt.service_name}`"></div>
+                        <div class="mt-1">
+                          <span class="badge text-xs" :class="statusBadge(appt.status)" x-text="appt.status"></span>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </template>
+
+    <!-- ── WALK-IN MODAL ────────────────────────────────────────────── -->
+    <template x-if="showWalkInModal">
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.4)">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8" @click.stop>
+          <h3 class="text-xl font-bold text-slate-800 mb-6">👤 Register Walk-in</h3>
+          <div class="space-y-4">
+            <!-- Service -->
+            <div>
+              <label class="label">Service *</label>
+              <select x-model="walkInForm.service_id" @change="loadWalkInSlots()" class="input w-full">
+                <option value="">Select service…</option>
+                <template x-for="s in services.filter(s=>s.is_active)" :key="s.id">
+                  <option :value="s.id" x-text="`${s.emoji} ${s.name} (${s.duration} min)`"></option>
+                </template>
+              </select>
+            </div>
+            <!-- Barber -->
+            <div>
+              <label class="label">Barber *</label>
+              <select x-model="walkInForm.employee_id" @change="loadWalkInSlots()" class="input w-full" :disabled="!walkInForm.service_id">
+                <option value="">
+                  <span x-show="!walkInForm.service_id">Select a service first</span>
+                  <span x-show="walkInForm.service_id">Select barber…</span>
+                </option>
+                <template x-for="e in walkInEmployees()" :key="e.id">
+                  <option :value="e.id" x-text="e.name"></option>
+                </template>
+              </select>
+            </div>
+            <!-- Time slot -->
+            <div>
+              <label class="label">Time Slot *</label>
+              <div x-show="walkInSlotsLoading" class="text-slate-400 text-sm">Loading slots…</div>
+              <select x-show="!walkInSlotsLoading" x-model="walkInForm.time" class="input w-full" :disabled="walkInSlots.length === 0">
+                <option value="" x-text="walkInSlots.length === 0 ? (walkInForm.employee_id ? 'No slots available today' : 'Pick service & barber first') : 'Select time…'"></option>
+                <template x-for="s in walkInSlots" :key="s">
+                  <option :value="s" x-text="s"></option>
+                </template>
+              </select>
+            </div>
+            <!-- Customer name -->
+            <div>
+              <label class="label">Customer Name *</label>
+              <input type="text" x-model="walkInForm.customer_name" class="input w-full" placeholder="e.g. John">
+            </div>
+            <!-- Phone (optional) -->
+            <div>
+              <label class="label">Phone <span class="text-slate-400 font-normal">(optional)</span></label>
+              <input type="text" x-model="walkInForm.customer_phone" class="input w-full" placeholder="e.g. 5978001234">
+            </div>
+            <!-- Error -->
+            <p x-show="walkInError" class="text-red-500 text-sm" x-text="walkInError"></p>
+          </div>
+          <div class="flex gap-3 mt-6">
+            <button @click="showWalkInModal=false" class="btn-secondary flex-1">Cancel</button>
+            <button @click="saveWalkIn()" :disabled="walkInSaving" class="btn-primary flex-1">
+              <span x-show="!walkInSaving">✅ Register Walk-in</span>
+              <span x-show="walkInSaving">Saving…</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ── EMPLOYEES ─────────────────────────────────────────────── -->
+    <div x-show="page === 'employees'" class="p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Employees</h2>
+        <button @click="openEmployeeModal()" class="btn-primary">+ Add Barber</button>
+      </div>
+
+      <div class="card p-0 overflow-hidden">
+        <div x-show="employees.length === 0" class="text-center text-slate-400 py-12">
+          No employees yet. Click "Add Barber" to get started.
+        </div>
+        <table x-show="employees.length > 0" class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50">
+              <th class="text-left px-6 py-3 text-slate-500 font-medium">Barber</th>
+              <th class="text-left px-6 py-3 text-slate-500 font-medium">Phone</th>
+              <th class="text-left px-6 py-3 text-slate-500 font-medium">Calendar</th>
+              <th class="text-left px-6 py-3 text-slate-500 font-medium">Status</th>
+              <th class="text-left px-6 py-3 text-slate-500 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <template x-for="e in employees" :key="e.id">
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                         :style="`background:${e.color}`" x-text="e.name[0].toUpperCase()"></div>
+                    <span class="font-semibold text-slate-800" x-text="e.name"></span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-slate-500" x-text="e.phone || '—'"></td>
+                <td class="px-6 py-4">
+                  <span x-show="!e.google_calendar_id" class="text-slate-300">—</span>
+                  <span x-show="!!e.google_calendar_id"
+                    class="inline-flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-lg font-mono"
+                    x-text="e.google_calendar_id"></span>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="badge" :class="e.is_active ? 'badge-green' : 'badge-gray'"
+                          x-text="e.is_active ? 'Active' : 'Inactive'"></span>
+                    <span x-show="e.isAwayToday"
+                          class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                      🚫 Away Today
+                    </span>
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <button @click="openEmployeeModal(e)" class="btn-secondary text-xs py-1 px-3">✏️ Edit</button>
+                    <button @click="openScheduleModal(e)" class="btn-secondary text-xs py-1 px-3">📋 Schedule</button>
+                    <button @click="nav('hours'); selectedHoursEmployee = e.id; loadHours()"
+                            class="btn-secondary text-xs py-1 px-3">⏰ Hours</button>
+                    <button @click="toggleAwayToday(e.id)"
+                            :class="e.isAwayToday ? 'bg-amber-500 text-white' : 'btn-secondary'"
+                            class="text-xs py-1 px-3 rounded-xl font-semibold transition"
+                            x-text="e.isAwayToday ? '✅ Back Today' : '🚫 Away Today'"></button>
+                    <button @click="toggleEmployee(e.id)"
+                            :class="e.is_active ? 'btn-danger' : 'btn-primary'"
+                            class="text-xs py-1 px-3 rounded-xl font-semibold transition"
+                            x-text="e.is_active ? 'Deactivate' : 'Activate'"></button>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── EMPLOYEE SCHEDULE MODAL ─────────────────────────────────── -->
+    <template x-if="showScheduleModal">
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.4)">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col" style="max-height:88vh" @click.stop>
+
+          <!-- Header -->
+          <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                   :style="`background:${scheduleEmployee?.color}`"
+                   x-text="scheduleEmployee?.name[0].toUpperCase()"></div>
+              <div>
+                <div class="font-bold text-slate-800" x-text="scheduleEmployee?.name"></div>
+                <div class="text-xs text-slate-400">Schedule</div>
+              </div>
+            </div>
+            <button @click="showScheduleModal=false" class="text-slate-400 hover:text-slate-600 text-xl leading-none">✕</button>
+          </div>
+
+          <!-- Date nav -->
+          <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+            <button @click="scheduleChangeDay(-1)" class="btn-secondary text-xs py-1 px-3">← Prev</button>
+            <div class="text-center">
+              <div class="font-semibold text-slate-800"
+                   x-text="new Date(scheduleDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})"></div>
+              <button @click="scheduleDate=new Date().toISOString().slice(0,10); loadSchedule()"
+                      class="text-xs text-amber-500 hover:underline">Today</button>
+            </div>
+            <button @click="scheduleChangeDay(1)" class="btn-secondary text-xs py-1 px-3">Next →</button>
+          </div>
+
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto px-6 py-5">
+            <div x-show="scheduleLoading" class="text-center text-slate-400 py-12">Loading…</div>
+            <template x-if="!scheduleLoading">
+              <div>
+                <!-- Empty state -->
+                <div x-show="scheduleDayAppts.length === 0" class="text-center py-12">
+                  <div class="text-4xl mb-3">✨</div>
+                  <div class="text-slate-500 font-medium">No appointments this day</div>
+                  <div class="text-slate-400 text-sm mt-1">The barber is available all day</div>
+                </div>
+                <!-- Appointment list -->
+                <div class="space-y-3">
+                  <template x-for="a in scheduleDayAppts" :key="a.id">
+                    <div class="flex gap-4 p-4 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition">
+                      <!-- Time column -->
+                      <div class="flex-shrink-0 text-right w-20">
+                        <div class="font-mono font-bold text-slate-700 text-sm" x-text="fmtTime(a.start_time)"></div>
+                        <div class="font-mono text-slate-400 text-xs" x-text="fmtTime(a.end_time)"></div>
+                        <div class="text-xs text-slate-400 mt-1" x-text="a.service_duration + ' min'"></div>
+                      </div>
+                      <!-- Divider bar -->
+                      <div class="w-1 rounded-full flex-shrink-0" :style="`background:${scheduleEmployee?.color}`"></div>
+                      <!-- Details -->
+                      <div class="flex-1 min-w-0">
+                        <div class="font-semibold text-slate-800" x-text="a.customer_name"></div>
+                        <div class="text-slate-500 text-sm" x-text="`${a.service_emoji} ${a.service_name}`"></div>
+                        <div class="flex items-center gap-2 mt-2">
+                          <span class="badge text-xs" :class="statusBadge(a.status)" x-text="a.status"></span>
+                          <span class="text-slate-300 text-xs font-mono" x-text="'#' + a.booking_code"></span>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Footer summary -->
+          <div x-show="scheduleDayAppts.length > 0 && !scheduleLoading"
+               class="px-6 py-3 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex gap-4">
+            <span x-text="`${scheduleDayAppts.length} appointment${scheduleDayAppts.length !== 1 ? 's' : ''}`"></span>
+            <span x-text="`${scheduleDayAppts.reduce((s,a)=>s+a.service_duration,0)} min total`"></span>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ── WORK HOURS ─────────────────────────────────────────────── -->
+    <div x-show="page === 'hours'" class="p-8">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Work Hours</h2>
+        <!-- Active label -->
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-sm text-slate-400">Editing:</span>
+          <template x-if="selectedHoursEmployee === null">
+            <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 bg-slate-100 px-3 py-0.5 rounded-full">
+              🌐 Global Default
+            </span>
+          </template>
+          <template x-if="selectedHoursEmployee !== null">
+            <span class="inline-flex items-center gap-2 text-sm font-semibold px-3 py-0.5 rounded-full text-white"
+              :style="`background:${employees.find(e=>String(e.id)===String(selectedHoursEmployee))?.color||'#94a3b8'}`"
+              x-text="employees.find(e=>String(e.id)===String(selectedHoursEmployee))?.name || 'Barber'">
+            </span>
+          </template>
+        </div>
+      </div>
+
+      <!-- Employee tabs -->
+      <div class="flex gap-2 mb-6 flex-wrap">
+        <button @click="selectedHoursEmployee = null; loadHours()"
+          :class="selectedHoursEmployee === null ? 'btn-primary' : 'btn-secondary'" class="text-xs">
+          🌐 Global Default
+        </button>
+        <template x-for="e in employees.filter(e=>e.is_active)" :key="e.id">
+          <button @click="selectedHoursEmployee = e.id; loadHours()"
+            :class="selectedHoursEmployee == e.id ? 'btn-primary' : 'btn-secondary'" class="text-xs"
+            x-text="e.name"></button>
+        </template>
+      </div>
+
+      <div class="card">
+        <p class="text-slate-500 text-sm mb-6" x-show="selectedHoursEmployee === null">
+          Global hours are used as the default for all barbers. Override per barber using the tabs above.
+        </p>
+        <!-- Loading state -->
+        <div x-show="hoursLoading" class="py-8 text-center text-slate-400 text-sm">⏳ Loading hours…</div>
+
+        <div x-show="!hoursLoading" class="space-y-3">
+          <template x-for="(h, idx) in weeklyHours" :key="h.day_of_week">
+            <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50">
+              <div class="w-28 text-sm font-medium text-slate-700"
+                   x-text="['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][h.day_of_week]"></div>
+              <!-- Toggle -->
+              <button @click="h.is_open = h.is_open ? 0 : 1"
+                :class="h.is_open ? 'bg-amber-500' : 'bg-slate-300'"
+                class="relative inline-flex h-6 w-11 rounded-full transition-colors flex-shrink-0">
+                <span :class="h.is_open ? 'translate-x-6' : 'translate-x-1'"
+                  class="inline-block h-4 w-4 rounded-full bg-white shadow mt-1 transition-transform"></span>
+              </button>
+              <span class="text-xs text-slate-500 w-12" x-text="h.is_open ? 'Open' : 'Closed'"></span>
+              <template x-if="h.is_open">
+                <div class="flex items-center gap-2">
+                  <input type="time" x-model="h.open_time"  class="input w-32 text-sm">
+                  <span class="text-slate-400">–</span>
+                  <input type="time" x-model="h.close_time" class="input w-32 text-sm">
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+        <div class="mt-6 flex gap-3">
+          <button @click="saveHours()" class="btn-primary">💾 Save Hours</button>
+          <span x-show="hoursSaved" class="text-emerald-500 text-sm self-center">✅ Saved!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SERVICES ──────────────────────────────────────────────── -->
+    <div x-show="page === 'services'" class="p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Services</h2>
+        <button @click="openServiceModal()" class="btn-primary">+ Add Service</button>
+      </div>
+      <div class="card">
+        <div x-show="services.length === 0" class="text-center text-slate-400 py-8">No services yet</div>
+        <div class="space-y-3">
+          <template x-for="s in services" :key="s.id">
+            <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 border border-slate-100">
+              <span class="text-2xl" x-text="s.emoji || '✂️'"></span>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-slate-800" x-text="s.name"></span>
+                  <span class="badge" :class="s.is_active ? 'badge-green' : 'badge-gray'"
+                        x-text="s.is_active ? 'Active' : 'Hidden'"></span>
+                </div>
+                <div class="text-slate-500 text-xs whitespace-pre-line" x-text="s.description"></div>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <div class="font-bold text-slate-800" x-text="`${settings.currency} ${s.price}`"></div>
+                <div class="text-slate-400 text-xs" x-text="`${s.duration} min`"></div>
+              </div>
+              <div class="flex gap-2">
+                <button @click="openServiceModal(s)" class="btn-secondary text-xs">✏️</button>
+                <button @click="toggleService(s.id)" class="btn-secondary text-xs"
+                        x-text="s.is_active ? '🙈 Hide' : '👁 Show'"></button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EMPLOYEE LEAVE ─────────────────────────────────────────── -->
+    <div x-show="page === 'leave'" class="p-8">
+      <h2 class="text-2xl font-bold text-slate-800 mb-6">🏖️ Employee Leave</h2>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left: Add leave form + list -->
+        <div class="space-y-5">
+
+          <!-- Add leave -->
+          <div class="card">
+            <h3 class="font-bold text-slate-700 mb-4">+ Add Leave</h3>
+            <div class="space-y-3">
+              <div>
+                <label class="label">Employee *</label>
+                <select x-model="leaveForm.employee_id" class="input">
+                  <option value="">Select barber…</option>
+                  <template x-for="e in employees.filter(e=>e.is_active)" :key="e.id">
+                    <option :value="e.id" x-text="e.name"></option>
+                  </template>
+                </select>
+              </div>
+              <div>
+                <label class="label">Start Date *</label>
+                <input type="date" x-model="leaveForm.start_date" class="input">
+              </div>
+              <div>
+                <label class="label">End Date <span class="text-slate-400 font-normal">(leave empty for single day)</span></label>
+                <input type="date" x-model="leaveForm.end_date" class="input">
+              </div>
+              <div>
+                <label class="label">Reason</label>
+                <input type="text" x-model="leaveForm.reason" class="input" placeholder="Vacation, sick, personal…">
+              </div>
+              <button @click="addLeave()" :disabled="leaveSaving || !leaveForm.employee_id || !leaveForm.start_date"
+                      class="btn-primary w-full" x-text="leaveSaving ? 'Saving…' : '💾 Save Leave'"></button>
+            </div>
+          </div>
+
+          <!-- Upcoming leave list -->
+          <div class="card">
+            <h3 class="font-bold text-slate-700 mb-3">Scheduled Leave</h3>
+            <div x-show="leaves.length === 0" class="text-slate-400 text-sm text-center py-4">No leave scheduled this month</div>
+            <div class="space-y-2">
+              <template x-for="l in leaves" :key="l.id">
+                <div class="flex items-start justify-between gap-2 p-3 bg-slate-50 rounded-xl">
+                  <div class="flex items-start gap-2">
+                    <div class="w-3 h-3 rounded-full mt-1 flex-shrink-0" :style="`background:${empColor(l.employee_id)}`"></div>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-700" x-text="empName(l.employee_id)"></div>
+                      <div class="text-xs text-slate-500"
+                           x-text="l.start_date === l.end_date ? l.start_date : l.start_date + ' → ' + l.end_date"></div>
+                      <div class="text-xs text-slate-400 italic" x-show="l.reason" x-text="l.reason"></div>
+                    </div>
+                  </div>
+                  <button @click="deleteLeave(l.id)" class="text-slate-300 hover:text-red-500 text-lg leading-none flex-shrink-0">✕</button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Calendar -->
+        <div class="lg:col-span-2 card">
+          <!-- Month navigation -->
+          <div class="flex items-center justify-between mb-5">
+            <button @click="leaveMonthPrev()" class="btn-secondary text-sm py-1 px-3">‹ Prev</button>
+            <h3 class="font-bold text-slate-700"
+                x-text="new Date(leaveMonth.split('-')[0], leaveMonth.split('-')[1] - 1, 2).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })"></h3>
+            <button @click="leaveMonthNext()" class="btn-secondary text-sm py-1 px-3">Next ›</button>
+          </div>
+
+          <!-- Day-of-week headers -->
+          <div class="grid grid-cols-7 mb-1">
+            <template x-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">
+              <div class="text-center text-xs font-semibold text-slate-400 py-1" x-text="d"></div>
+            </template>
+          </div>
+
+          <!-- Calendar grid -->
+          <div class="grid grid-cols-7 gap-1">
+            <template x-for="(cell, idx) in leaveCalendarDays()" :key="idx">
+              <div :class="cell ? 'bg-slate-50 rounded-lg p-1 min-h-16' : ''"
+                   class="text-xs">
+                <template x-if="cell">
+                  <div>
+                    <div class="font-semibold text-slate-500 mb-1" x-text="cell.day"></div>
+                    <template x-for="l in cell.onLeave" :key="l.id">
+                      <div class="rounded px-1 py-0.5 mb-0.5 text-white text-xs truncate"
+                           :style="`background:${empColor(l.employee_id)}`"
+                           :title="empName(l.employee_id) + (l.reason ? ' — ' + l.reason : '')"
+                           x-text="empName(l.employee_id)"></div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+
+          <!-- Legend -->
+          <div class="mt-4 flex flex-wrap gap-3">
+            <template x-for="e in employees.filter(e=>e.is_active)" :key="e.id">
+              <div class="flex items-center gap-1.5 text-xs text-slate-600">
+                <div class="w-3 h-3 rounded-full" :style="`background:${e.color}`"></div>
+                <span x-text="e.name"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── CLOSED DATES ───────────────────────────────────────────── -->
+    <div x-show="page === 'blocks'" class="p-8">
+      <h2 class="text-2xl font-bold text-slate-800 mb-6">🚫 Closed Dates & Time-Off</h2>
+
+      <!-- Surinamese Public Holidays -->
+      <div class="card mb-6 border-amber-200 bg-amber-50">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h3 class="font-bold text-amber-800 mb-1">🇸🇷 Surinamese Public Holidays</h3>
+            <p class="text-xs text-amber-700">Automatically blocks all public holidays shop-wide so customers can't book on those days.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <select x-model="holidayYear"
+                    @change="api('GET', `/api/holidays/${holidayYear}`).then(r => holidayPreview = r)"
+                    class="input w-28 text-sm">
+              <template x-for="y in [2024,2025,2026,2027,2028]" :key="y">
+                <option :value="y" x-text="y"></option>
+              </template>
+            </select>
+            <button @click="syncHolidays()"
+                    :disabled="holidaySyncing"
+                    class="btn-primary text-sm"
+                    x-text="holidaySyncing ? 'Syncing…' : '🔄 Sync Holidays'"></button>
+          </div>
+        </div>
+        <!-- Preview list -->
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          <template x-for="h in holidayPreview" :key="h.date">
+            <div class="flex items-center gap-2 text-xs text-amber-800 bg-white rounded-lg px-3 py-1.5 border border-amber-200">
+              <span class="font-mono text-amber-500 flex-shrink-0" x-text="h.date"></span>
+              <span x-text="h.name"></span>
+            </div>
+          </template>
+        </div>
+        <p class="text-xs text-amber-600 mt-3">ℹ️ Islamic & Hindu dates are approximate. Sync adds them to Closed Dates above — remove individually if dates shift.</p>
+      </div>
+
+      <!-- Add block form -->
+      <div class="card mb-6">
+        <h3 class="font-semibold text-slate-700 mb-4">Add Closure / Time Block</h3>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="label">Date *</label>
+            <input type="date" x-model="blockForm.date" class="input w-full">
+          </div>
+          <div>
+            <label class="label">Applies To</label>
+            <select x-model="blockForm.employee_id" class="input w-full">
+              <option value="">🏪 Entire Shop (all barbers)</option>
+              <template x-for="e in employees" :key="e.id">
+                <option :value="e.id" x-text="e.name"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="label">Type</label>
+            <select x-model="blockForm.all_day" class="input w-full">
+              <option value="1">🗓️ Full Day Off / Shop Closed</option>
+              <option value="0">⏱️ Specific Time Range</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Reason (optional)</label>
+            <input type="text" x-model="blockForm.reason" class="input w-full" placeholder="e.g. National Holiday, Lunch, Training">
+          </div>
+          <template x-if="blockForm.all_day == '0'">
+            <div class="col-span-2 grid grid-cols-2 gap-4">
+              <div>
+                <label class="label">From</label>
+                <input type="time" x-model="blockForm.start_time" class="input w-full">
+              </div>
+              <div>
+                <label class="label">Until</label>
+                <input type="time" x-model="blockForm.end_time" class="input w-full">
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="flex items-center gap-3">
+          <button @click="saveBlock()" class="btn-primary" :disabled="blockSaving" x-text="blockSaving ? 'Saving…' : '+ Add Block'"></button>
+          <span x-show="blockError" class="text-red-500 text-sm" x-text="blockError"></span>
+        </div>
+      </div>
+
+      <!-- Upcoming blocks list -->
+      <div class="card">
+        <h3 class="font-semibold text-slate-700 mb-4">Upcoming Closures & Blocks</h3>
+        <div x-show="blocks.length === 0" class="text-slate-400 text-center py-8">No closures or blocks scheduled.</div>
+        <div class="overflow-x-auto">
+          <table x-show="blocks.length > 0" class="w-full text-sm">
+            <thead>
+              <tr class="text-left border-b border-slate-100">
+                <th class="pb-3 text-slate-500 font-medium">Date</th>
+                <th class="pb-3 text-slate-500 font-medium">Applies To</th>
+                <th class="pb-3 text-slate-500 font-medium">Type</th>
+                <th class="pb-3 text-slate-500 font-medium">Reason</th>
+                <th class="pb-3 text-slate-500 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+              <template x-for="b in blocks" :key="b.id">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 font-mono text-sm font-medium" x-text="fmtBlockDate(b.date)"></td>
+                  <td class="py-3">
+                    <template x-if="b.employee_id === null">
+                      <span class="inline-flex items-center gap-1 text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full font-medium">🏪 Entire Shop</span>
+                    </template>
+                    <template x-if="b.employee_id !== null">
+                      <span class="inline-flex items-center gap-1.5">
+                        <span class="w-2.5 h-2.5 rounded-full" :style="`background:${empColor(b.employee_id)}`"></span>
+                        <span x-text="empName(b.employee_id)"></span>
+                      </span>
+                    </template>
+                  </td>
+                  <td class="py-3">
+                    <template x-if="b.all_day">
+                      <span class="text-slate-600">🗓️ Full Day</span>
+                    </template>
+                    <template x-if="!b.all_day">
+                      <span class="text-slate-600 font-mono" x-text="`⏱️ ${b.start_time} – ${b.end_time}`"></span>
+                    </template>
+                  </td>
+                  <td class="py-3 text-slate-500" x-text="b.reason || '—'"></td>
+                  <td class="py-3">
+                    <button @click="deleteBlock(b.id)" class="text-red-400 hover:text-red-600 text-xs font-medium">Delete</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GALLERY ───────────────────────────────────────────────── -->
+    <div x-show="page === 'gallery'" class="p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">📸 Gallery</h2>
+        <!-- Upload button -->
+        <label class="btn-primary cursor-pointer">
+          <span x-text="photoUploading ? 'Uploading…' : '+ Upload Photos'"></span>
+          <input type="file" accept="image/*" multiple class="hidden"
+            @change="uploadPhotos(Array.from($event.target.files)); $event.target.value=''">
+        </label>
+      </div>
+
+      <!-- Tag filter -->
+      <div class="flex gap-2 flex-wrap mb-6" x-show="allPhotoTags().length > 0">
+        <button @click="photoTagFilter=''"
+          :class="photoTagFilter==='' ? 'btn-primary' : 'btn-secondary'"
+          class="text-xs py-1.5 px-3">All</button>
+        <template x-for="tag in allPhotoTags()" :key="tag">
+          <button @click="photoTagFilter = photoTagFilter===tag ? '' : tag"
+            :class="photoTagFilter===tag ? 'btn-primary' : 'btn-secondary'"
+            class="text-xs py-1.5 px-3 capitalize" x-text="tag"></button>
+        </template>
+      </div>
+
+      <!-- Empty state -->
+      <div x-show="photos.length === 0" class="card text-center text-slate-400 py-16">
+        <div class="text-5xl mb-3">📸</div>
+        <p class="font-medium">No photos yet</p>
+        <p class="text-sm mt-1">Upload haircut photos and tag them — customers can browse styles via WhatsApp</p>
+      </div>
+
+      <!-- Photo grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <template x-for="p in filteredPhotos()" :key="p.id">
+          <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 group relative">
+            <img :src="'/uploads/' + p.filename" class="w-full aspect-square object-cover">
+            <!-- Tag chips -->
+            <div class="p-2">
+              <div class="flex flex-wrap gap-1 mb-1.5">
+                <template x-for="tag in (p.tags || [])" :key="tag">
+                  <span class="text-xs bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 font-medium capitalize" x-text="tag"></span>
+                </template>
+                <span x-show="!p.tags || p.tags.length===0" class="text-xs text-slate-300 italic">no tags</span>
+              </div>
+              <p x-show="p.caption" class="text-xs text-slate-500 truncate" x-text="p.caption"></p>
+            </div>
+            <!-- Hover actions -->
+            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+              <button @click="editingPhoto = { id: p.id, tagsRaw: (p.tags||[]).join(', '), caption: p.caption||'' }"
+                class="bg-white text-slate-800 rounded-xl px-3 py-1.5 text-xs font-semibold">✏️ Edit</button>
+              <button @click="deletePhoto(p.id)"
+                class="bg-red-500 text-white rounded-xl px-3 py-1.5 text-xs font-semibold">🗑️</button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Edit photo modal -->
+      <template x-if="editingPhoto">
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5)"
+             @click.self="editingPhoto=null">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="font-bold text-slate-800 mb-4">✏️ Edit Photo</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="label">Tags <span class="text-slate-400 font-normal">(comma separated)</span></label>
+                <input x-model="editingPhoto.tagsRaw" class="input" placeholder="fade, haircut, beard">
+                <p class="text-xs text-slate-400 mt-1">These are what customers search for in WhatsApp (e.g. "fade")</p>
+              </div>
+              <div>
+                <label class="label">Caption <span class="text-slate-400 font-normal">(optional)</span></label>
+                <input x-model="editingPhoto.caption" class="input" placeholder="Clean fade with skin taper">
+              </div>
+            </div>
+            <div class="flex gap-3 mt-5">
+              <button @click="savePhotoEdit()" class="btn-primary flex-1">Save</button>
+              <button @click="editingPhoto=null" class="btn-secondary flex-1">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- ── MENU ORDER ───────────────────────────────────────────── -->
+    <div x-show="page === 'menu'" class="p-8">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-2xl font-bold text-slate-800">📋 Menu Order</h2>
+        <button @click="saveMenuOrder()" class="btn-primary">💾 Save</button>
+      </div>
+      <p class="text-sm text-slate-400 mb-6">Drag items up or down to change the order customers see them. Toggle the switch to show or hide an option entirely.</p>
+
+      <div class="max-w-lg space-y-2">
+        <template x-for="(item, idx) in menuItems" :key="item.action">
+          <div class="card flex items-center gap-4 py-3"
+               :class="item.enabled ? '' : 'opacity-50'">
+            <!-- Up / Down -->
+            <div class="flex flex-col gap-0.5 flex-shrink-0">
+              <button @click="menuMove(idx, -1)" :disabled="idx === 0"
+                      class="text-slate-400 hover:text-slate-700 disabled:opacity-20 text-xs leading-none px-1">▲</button>
+              <button @click="menuMove(idx, 1)" :disabled="idx === menuItems.length - 1"
+                      class="text-slate-400 hover:text-slate-700 disabled:opacity-20 text-xs leading-none px-1">▼</button>
+            </div>
+            <!-- Position badge -->
+            <span class="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center flex-shrink-0"
+                  x-text="item.enabled ? (menuItems.slice(0,idx+1).filter(m=>m.enabled).length) : '—'"></span>
+            <!-- Icon + label -->
+            <span class="text-lg flex-shrink-0" x-text="menuIcons[item.action]"></span>
+            <div class="flex-1 min-w-0">
+              <!-- View mode -->
+              <template x-if="menuEditIdx !== idx">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-slate-700 text-sm truncate"
+                        x-text="(item.labels && item.labels[menuEditLang]) || menuLabels[item.action]"></span>
+                  <button @click="menuEditIdx = idx; if(!item.labels) item.labels = {}"
+                          class="text-slate-400 hover:text-amber-500 flex-shrink-0 text-xs px-1" title="Rename">✏️</button>
+                </div>
+              </template>
+              <!-- Edit mode — one input per language -->
+              <template x-if="menuEditIdx === idx">
+                <div class="space-y-1.5">
+                  <div class="flex gap-1 mb-1">
+                    <template x-for="lng in menuLangs" :key="lng.code">
+                      <button @click="menuEditLang = lng.code"
+                              :class="menuEditLang === lng.code ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                              class="text-xs px-2 py-0.5 rounded font-medium" x-text="lng.flag + ' ' + lng.code.toUpperCase()"></button>
+                    </template>
+                  </div>
+                  <template x-for="lng in menuLangs" :key="lng.code">
+                    <div x-show="menuEditLang === lng.code">
+                      <input type="text"
+                             :value="item.labels && item.labels[lng.code] || ''"
+                             @input="if(!item.labels) item.labels = {}; item.labels[lng.code] = $event.target.value"
+                             :placeholder="menuLabels[item.action] + ' (' + lng.name + ' — blank = auto-translate)'"
+                             @keydown.escape="menuEditIdx = null"
+                             class="w-full text-xs border border-amber-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+                    </div>
+                  </template>
+                  <button @click="menuEditIdx = null" class="text-xs text-amber-600 font-medium hover:underline">✅ Done</button>
+                </div>
+              </template>
+            </div>
+            <!-- Enable toggle -->
+            <button @click="item.enabled = !item.enabled"
+                    :class="item.enabled ? 'bg-amber-500' : 'bg-slate-200'"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0">
+              <span :class="item.enabled ? 'translate-x-6' : 'translate-x-1'"
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow"></span>
+            </button>
+          </div>
+        </template>
+      </div>
+
+      <div class="mt-6 flex items-center gap-3">
+        <button @click="saveMenuOrder()" class="btn-primary">💾 Save Order</button>
+        <span x-show="menuSaved" class="text-emerald-500 text-sm">✅ Saved!</span>
+      </div>
+    </div>
+
+    <!-- ── TRAINING ──────────────────────────────────────────────── -->
+    <div x-show="page === 'training'" class="p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">🎓 Training</h2>
+        <div class="flex items-center gap-3">
+          <!-- Enable toggle -->
+          <span class="text-sm text-slate-500" x-text="settings.training_enabled === '1' ? 'Visible in menu' : 'Hidden from menu'"></span>
+          <button @click="settings.training_enabled = settings.training_enabled === '1' ? '0' : '1'; saveSettings()"
+            :class="settings.training_enabled === '1' ? 'bg-amber-500' : 'bg-slate-200'"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0">
+            <span :class="settings.training_enabled === '1' ? 'translate-x-6' : 'translate-x-1'"
+              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Upload new video -->
+      <div class="card mb-6">
+        <h3 class="font-bold text-slate-700 mb-1">Add Training Video</h3>
+        <p class="text-xs text-slate-400 mb-4">Each video can have its own caption. Videos are sent in order when a customer selects Training.</p>
+        <div class="space-y-3">
+          <div>
+            <label class="label">Video File <span class="font-normal text-slate-400">(MP4 or MOV)</span></label>
+            <label class="btn-secondary cursor-pointer inline-flex items-center gap-2">
+              🎬 Choose Video
+              <input type="file" accept="video/*" class="hidden" @change="trainingUploadFile = $event.target.files[0]; trainingUploadName = $event.target.files[0]?.name || ''">
+            </label>
+            <span class="text-xs text-slate-500 ml-2" x-text="trainingUploadName || 'No file chosen'"></span>
+          </div>
+          <div>
+            <label class="label">Caption <span class="font-normal text-slate-400">(shown under the video in WhatsApp)</span></label>
+            <textarea x-model="trainingUploadCaption" class="input text-sm" rows="3" placeholder="e.g. 📋 Module 1 — Fade technique. Watch carefully and practice these steps…"></textarea>
+          </div>
+          <button @click="uploadTrainingVideo()" :disabled="!trainingUploadFile"
+            class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+            ⬆️ Upload Video
+          </button>
+        </div>
+      </div>
+
+      <!-- Video list -->
+      <div class="space-y-4">
+        <div x-show="trainingVideos.length === 0" class="card text-center text-slate-400 py-10">
+          <p class="text-3xl mb-2">🎬</p>
+          <p class="text-sm">No training videos yet. Upload one above.</p>
+        </div>
+        <template x-for="(v, idx) in trainingVideos" :key="v.id">
+          <div class="card">
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background:#f1f5f9">🎬</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs text-slate-400 font-mono truncate mb-2" x-text="(idx + 1) + '. ' + v.originalName"></p>
+                <textarea
+                  x-model="v.caption"
+                  @change="saveTrainingCaption(v)"
+                  class="input text-sm"
+                  rows="3"
+                  placeholder="Caption shown under this video in WhatsApp…"></textarea>
+                <p class="text-xs text-slate-400 mt-1">Caption saves automatically when you click outside.</p>
+              </div>
+              <button @click="deleteTrainingVideoById(v.id)" class="btn-danger text-xs flex-shrink-0">🗑️ Remove</button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ── CUSTOMERS ─────────────────────────────────────────────── -->
+    <div x-show="page === 'customers'" class="p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">👤 Customers</h2>
+        <div class="flex gap-2">
+          <button @click="customerFilter='all'"     :class="customerFilter==='all'     ? 'btn-primary' : 'btn-secondary'" class="text-xs py-1.5 px-3">All</button>
+          <button @click="customerFilter='noshows'" :class="customerFilter==='noshows' ? 'btn-primary' : 'btn-secondary'" class="text-xs py-1.5 px-3">⚠️ No-Shows</button>
+          <button @click="customerFilter='blocked'" :class="customerFilter==='blocked' ? 'btn-primary' : 'btn-secondary'" class="text-xs py-1.5 px-3">🚫 Blocked</button>
+        </div>
+      </div>
+
+      <div x-show="customers.length === 0" class="card text-center text-slate-400 py-12">
+        No customers yet — they appear here automatically after their first booking.
+      </div>
+
+      <div class="space-y-4">
+        <template x-for="c in filteredCustomers()" :key="c.id">
+          <div class="card"
+               :class="c.is_blocked ? 'border-red-200 bg-red-50' : c.no_show_count > 0 ? 'border-amber-200 bg-amber-50' : ''">
+
+            <!-- Header row -->
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 flex-shrink-0"
+                     x-text="(c.name || '?')[0].toUpperCase()"></div>
+                <div class="flex-1 min-w-0">
+                  <!-- Inline name edit -->
+                  <template x-if="editingCustomerName && editingCustomerName.id === c.id">
+                    <div class="flex items-center gap-2">
+                      <input x-model="editingCustomerName.value" @keydown.enter="saveCustomerName(c)"
+                             @keydown.escape="editingCustomerName = null"
+                             class="input text-sm py-0.5 font-semibold" style="max-width:180px">
+                      <button @click="saveCustomerName(c)" class="text-emerald-600 text-xs font-semibold">✓ Save</button>
+                      <button @click="editingCustomerName = null" class="text-slate-400 text-xs">✕</button>
+                    </div>
+                  </template>
+                  <template x-if="!editingCustomerName || editingCustomerName.id !== c.id">
+                    <div class="flex items-center gap-2">
+                      <span class="font-semibold text-slate-800" x-text="c.name || '(unnamed)'"></span>
+                      <button @click="editingCustomerName = { id: c.id, value: c.name || '' }"
+                              class="text-slate-400 hover:text-slate-600 text-xs" title="Edit name">✏️</button>
+                    </div>
+                  </template>
+                  <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span x-show="c.is_blocked" class="text-xs font-bold text-red-600">🚫 BLOCKED</span>
+                    <span x-show="c.block_reason && c.is_blocked" class="text-xs text-red-400 italic" x-text="'— ' + c.block_reason"></span>
+                    <span x-show="!c.is_blocked && c.no_show_count > 0" class="text-xs font-semibold text-amber-600" x-text="'⚠️ ' + c.no_show_count + ' no-show(s)'"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Clickable stats -->
+              <div class="flex items-center gap-3 text-xs text-slate-500 flex-shrink-0">
+                <button @click="openCustomerStats(c, 'bookings')"
+                        class="text-center hover:bg-slate-100 rounded-lg px-2 py-1 transition"
+                        :class="c.total_bookings > 0 ? 'cursor-pointer' : 'cursor-default'">
+                  <div class="font-bold text-slate-700 text-base" x-text="c.total_bookings"></div>
+                  <div>bookings</div>
+                </button>
+                <button @click="openCustomerStats(c, 'noshows')"
+                        class="text-center hover:bg-amber-50 rounded-lg px-2 py-1 transition"
+                        :class="c.no_show_count > 0 ? 'cursor-pointer' : 'cursor-default'">
+                  <div class="font-bold text-amber-600 text-base" x-text="c.no_show_count"></div>
+                  <div>no-shows</div>
+                </button>
+                <button @click="openCustomerStats(c, 'ratings')"
+                        class="text-center hover:bg-emerald-50 rounded-lg px-2 py-1 transition"
+                        :class="c.avg_rating ? 'cursor-pointer' : 'cursor-default'">
+                  <div class="font-bold text-emerald-600 text-base" x-text="c.avg_rating ? '⭐ ' + c.avg_rating : '—'"></div>
+                  <div>avg rating</div>
+                </button>
+                <!-- Delete -->
+                <button @click="deleteCustomer(c.id)"
+                        class="text-slate-300 hover:text-red-500 transition ml-1" title="Delete customer">🗑️</button>
+              </div>
+            </div>
+
+            <!-- Phone numbers -->
+            <div class="mt-3">
+              <div class="text-xs font-medium text-slate-500 mb-1">📱 Registered numbers:</div>
+              <div class="flex flex-wrap gap-2">
+                <template x-for="phone in (c.phones || [])" :key="phone">
+                  <div class="flex items-center gap-1 bg-slate-100 rounded-lg px-2 py-1 text-xs font-mono">
+                    <span x-text="phone"></span>
+                    <button @click="removePhone(c.id, phone)" x-show="(c.phones || []).length > 1"
+                            class="text-slate-400 hover:text-red-500 ml-1 leading-none"
+                            title="Remove this number">✕</button>
+                  </div>
+                </template>
+              </div>
+              <div class="flex items-center gap-2 mt-2">
+                <input type="text"
+                       :value="addPhoneInputs[c.id] || ''"
+                       @input="addPhoneInputs[c.id] = $event.target.value"
+                       class="input text-xs py-1 w-44"
+                       placeholder="+597 XXX-XXXX (link another number)">
+                <button @click="addPhone(c.id)" class="btn-secondary text-xs py-1 px-3">+ Link</button>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mt-3">
+              <textarea rows="1" placeholder="Notes…"
+                :value="c.notes || ''"
+                @change="api('PUT', `/api/customers/${c.id}`, { notes: $event.target.value }).then(() => {})"
+                class="input text-xs py-1 w-full resize-none"></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-3 flex items-center gap-2 flex-wrap">
+              <template x-if="!c.is_blocked">
+                <div class="flex items-center gap-2">
+                  <input type="text"
+                         :value="blockReasonInputs[c.id] || ''"
+                         @input="blockReasonInputs[c.id] = $event.target.value"
+                         class="input text-xs py-1 w-44"
+                         placeholder="Block reason (optional)">
+                  <button @click="blockCustomer(c.id)" class="btn-danger text-xs py-1 px-3">🚫 Block</button>
+                </div>
+              </template>
+              <template x-if="c.is_blocked">
+                <button @click="unblockCustomer(c.id)" class="btn-primary text-xs py-1 px-3">✅ Restore Access</button>
+              </template>
+            </div>
+
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ── CUSTOMER STATS MODAL ─────────────────────────────────── -->
+    <template x-if="customerStatsModal">
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.5)">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+          <!-- Header -->
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div>
+              <h3 class="font-bold text-slate-800" x-text="customerStatsModal.title"></h3>
+              <p class="text-xs text-slate-400 mt-0.5" x-text="customerStatsModal.customer.name"></p>
+            </div>
+            <button @click="customerStatsModal = null" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+          </div>
+          <!-- List -->
+          <div class="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+            <div x-show="customerStatsModal.loading" class="text-center text-slate-400 py-8 text-sm">Loading…</div>
+            <div x-show="!customerStatsModal.loading && customerStatsModal.items.length === 0"
+                 class="text-center text-slate-400 py-8 text-sm">No records found.</div>
+            <template x-for="a in customerStatsModal.items" :key="a.id">
+              <div class="border border-slate-100 rounded-xl px-4 py-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <div class="text-sm font-semibold text-slate-700" x-text="a.service_name"></div>
+                    <div class="text-xs text-slate-400 mt-0.5"
+                         x-text="new Date(a.start_time).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:'America/Paramaribo'}) + ' · ' + (a.employee_name || 'Unassigned')"></div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <span x-show="a.rating" class="text-xs text-emerald-600 font-semibold" x-text="'⭐ ' + a.rating"></span>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                          :class="{
+                            'bg-emerald-100 text-emerald-700': a.status==='completed',
+                            'bg-red-100 text-red-700': a.status==='no-show' || a.status==='cancelled',
+                            'bg-blue-100 text-blue-700': a.status==='confirmed',
+                            'bg-slate-100 text-slate-600': !['completed','no-show','cancelled','confirmed'].includes(a.status)
+                          }"
+                          x-text="a.status"></span>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ── KEYWORDS ─────────────────────────────────────────────── -->
+    <div x-show="page === 'keywords'" class="p-8">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-2xl font-bold text-slate-800">🔑 Keywords</h2>
+      </div>
+      <p class="text-sm text-slate-400 mb-6">When a customer types one of these words the bot jumps straight to that section — from any state, in any language. Keywords are case-insensitive.</p>
+
+      <!-- Add new keyword -->
+      <div class="card mb-6">
+        <h3 class="font-bold text-slate-700 mb-3">Add Keyword</h3>
+        <div class="flex gap-3 flex-wrap">
+          <input x-model="newKeyword.keyword" class="input text-sm flex-1" style="min-width:140px"
+                 placeholder="e.g. fade, boek, afspraak"
+                 @keydown.enter="addKeyword()">
+          <select x-model="newKeyword.action" class="input text-sm" style="min-width:160px">
+            <option value="booking">📅 Booking</option>
+            <option value="gallery">📸 Gallery / Styles</option>
+            <option value="training">🎓 Training</option>
+            <option value="hours">🕐 Opening Hours</option>
+            <option value="location">📍 Location</option>
+            <option value="contact">📞 Contact</option>
+            <option value="manage">🔧 Manage Booking</option>
+          </select>
+          <button @click="addKeyword()" class="btn-primary text-sm px-5">+ Add</button>
+        </div>
+      </div>
+
+      <!-- Keywords grouped by action -->
+      <template x-for="group in keywordGroups()" :key="group.action">
+        <div class="card mb-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-base" x-text="group.icon"></span>
+            <h3 class="font-bold text-slate-700 text-sm" x-text="group.label"></h3>
+            <span class="text-xs text-slate-400" x-text="'(' + group.items.length + ')'"></span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <template x-for="k in group.items" :key="k.id">
+              <div class="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm border transition"
+                   :class="k.enabled ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-slate-100 border-slate-200 text-slate-400 line-through'">
+                <span x-text="k.keyword"></span>
+                <button @click="toggleKeyword(k)" :title="k.enabled ? 'Disable' : 'Enable'"
+                        class="text-xs opacity-60 hover:opacity-100 ml-0.5">
+                  <span x-text="k.enabled ? '⏸' : '▶'"></span>
+                </button>
+                <button @click="deleteKeyword(k.id)" title="Delete"
+                        class="text-xs opacity-60 hover:opacity-100 hover:text-red-500">✕</button>
+              </div>
+            </template>
+            <span x-show="group.items.length === 0" class="text-xs text-slate-400 italic py-1">No keywords yet.</span>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- ── BOT MESSAGES ──────────────────────────────────────────── -->
+    <div x-show="page === 'messages'" class="p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Bot Messages</h2>
+        <button @click="saveMessages()" class="btn-primary">💾 Save All</button>
+      </div>
+      <div class="space-y-4">
+        <template x-for="m in botMessages" :key="m.key">
+          <div class="card">
+            <label class="block font-semibold text-slate-700 mb-1" x-text="m.label"></label>
+            <p class="text-slate-400 text-xs mb-2" x-text="m.description"></p>
+            <textarea x-model="m.value" rows="3"
+              class="input font-mono text-sm" :placeholder="m.label"></textarea>
+          </div>
+        </template>
+        <div x-show="botMessages.length === 0" class="card text-center text-slate-400 py-8">Loading…</div>
+      </div>
+      <div class="mt-4 flex gap-3">
+        <button @click="saveMessages()" class="btn-primary">💾 Save All</button>
+        <span x-show="messagesSaved" class="text-emerald-500 text-sm self-center">✅ Saved!</span>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS ──────────────────────────────────────────────── -->
+    <div x-show="page === 'settings'" class="p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Settings</h2>
+        <div class="flex items-center gap-3">
+          <span x-show="settingsSaved" class="text-emerald-500 text-sm font-medium">✅ Saved!</span>
+          <button @click="saveSettings()" class="btn-primary">💾 Save All</button>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="flex gap-1 mb-6 bg-slate-100 p-1 rounded-xl w-fit flex-wrap">
+        <button @click="settingsTab='shop'"         :class="settingsTab==='shop'         ? 'bg-white shadow text-slate-800 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg text-sm transition">🏪 Shop</button>
+        <button @click="settingsTab='booking'"      :class="settingsTab==='booking'      ? 'bg-white shadow text-slate-800 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg text-sm transition">📅 Booking</button>
+        <button @click="settingsTab='notifications'":class="settingsTab==='notifications'? 'bg-white shadow text-slate-800 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg text-sm transition">🔔 Notifications</button>
+        <button @click="settingsTab='rules'"        :class="settingsTab==='rules'        ? 'bg-white shadow text-slate-800 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg text-sm transition">⚠️ Rules</button>
+        <button @click="settingsTab='integrations'" :class="settingsTab==='integrations' ? 'bg-white shadow text-slate-800 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg text-sm transition">🔗 Integrations</button>
+        <button @click="settingsTab='security'"     :class="settingsTab==='security'     ? 'bg-white shadow text-slate-800 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="px-4 py-2 rounded-lg text-sm transition">🔒 Security</button>
+      </div>
+
+      <!-- ── TAB: Shop ───────────────────────────────────────────────── -->
+      <div x-show="settingsTab==='shop'" class="max-w-xl space-y-6">
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">🏪 Shop Info</h3>
+          <div>
+            <label class="label">Shop Name</label>
+            <input x-model="settings.shop_name" class="input" placeholder="Jayden's Barbershop">
+          </div>
+          <div>
+            <label class="label">Address</label>
+            <input x-model="settings.shop_address" class="input" placeholder="Paramaribo, Suriname">
+          </div>
+          <div>
+            <label class="label">WhatsApp Number</label>
+            <input x-model="settings.shop_phone" class="input" placeholder="+597 XXX-XXXX">
+            <p class="text-xs text-slate-400 mt-1">Shown to customers when the bot is paused or unavailable.</p>
+          </div>
+          <div>
+            <label class="label">Telefoon (Vaste lijn)</label>
+            <input x-model="settings.shop_landline" class="input" placeholder="+597 XXX-XXXX">
+          </div>
+          <div>
+            <label class="label">Management / Finance Contact</label>
+            <input x-model="settings.management_phone" class="input" placeholder="+597 XXX-XXXX">
+            <p class="text-xs text-slate-400 mt-1">Referred to customers who ask about discounts, payments or out-of-scope questions. Falls back to shop phone if empty.</p>
+          </div>
+          <div>
+            <label class="label">Email</label>
+            <input x-model="settings.shop_email" class="input" placeholder="info@example.com">
+          </div>
+          <div>
+            <label class="label">Instagram</label>
+            <input x-model="settings.shop_instagram" class="input" placeholder="@jaydensbarbershop">
+          </div>
+          <div>
+            <label class="label">Facebook</label>
+            <input x-model="settings.shop_facebook" class="input" placeholder="https://facebook.com/jaydensbarbershop">
+          </div>
+          <div>
+            <label class="label">TikTok</label>
+            <input x-model="settings.shop_tiktok" class="input" placeholder="@jaydensbarbershop">
+          </div>
+          <div>
+            <label class="label">Google Maps Link</label>
+            <input x-model="settings.google_maps_link" class="input" placeholder="https://maps.google.com/...">
+          </div>
+        </div>
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">🌍 Regional</h3>
+          <div>
+            <label class="label">Currency</label>
+            <input x-model="settings.currency" class="input w-32" placeholder="SRD">
+            <p class="text-xs text-slate-400 mt-1">Shown next to prices in WhatsApp messages (e.g. SRD, USD, EUR).</p>
+          </div>
+          <div>
+            <label class="label">Timezone</label>
+            <select x-model="settings.timezone" class="input">
+              <option value="America/Paramaribo">America/Paramaribo — Suriname (GMT-3)</option>
+              <option value="America/New_York">America/New_York — US East (EST/EDT)</option>
+              <option value="America/Chicago">America/Chicago — US Central (CST/CDT)</option>
+              <option value="America/Denver">America/Denver — US Mountain (MST/MDT)</option>
+              <option value="America/Los_Angeles">America/Los_Angeles — US West (PST/PDT)</option>
+              <option value="America/Curacao">America/Curacao — Curaçao/Aruba (AST)</option>
+              <option value="America/Guyana">America/Guyana — Guyana (GYT)</option>
+              <option value="Europe/Amsterdam">Europe/Amsterdam (CET/CEST)</option>
+              <option value="Europe/London">Europe/London (GMT/BST)</option>
+            </select>
+          </div>
+        </div>
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">🌐 Language Selection Menu</h3>
+          <div>
+            <label class="label">Prompt</label>
+            <input x-model="settings.lang_menu_prompt" class="input" placeholder="🌐 *Kies uw taal:*">
+            <p class="text-xs text-slate-400 mt-1">Shown to every new customer when picking a language. Leave blank to use the default.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: Booking ────────────────────────────────────────────── -->
+      <div x-show="settingsTab==='booking'" class="max-w-xl space-y-6">
+        <div class="card space-y-5">
+          <h3 class="font-bold text-slate-700">📅 Booking Settings</h3>
+          <div>
+            <label class="label">Days Available for Booking</label>
+            <div class="flex items-center gap-3">
+              <input type="number" x-model="settings.booking_days_ahead" class="input w-24" min="1" max="60" placeholder="20">
+              <span class="text-sm text-slate-500">days from today</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">How far ahead customers can book. 7 = one week · 14 = two weeks · 20 = three weeks.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="chk-any-employee"
+              :checked="settings.allow_any_employee === '1'"
+              @change="settings.allow_any_employee = $event.target.checked ? '1' : '0'"
+              class="w-4 h-4 accent-amber-500">
+            <label for="chk-any-employee" class="text-sm text-slate-700 cursor-pointer">
+              Show <strong>"Any Available Barber"</strong> option in booking flow
+            </label>
+          </div>
+        </div>
+
+        <!-- New Customer Policy -->
+        <div class="card space-y-3">
+          <h3 class="font-bold text-slate-700">🆕 New Customer Policy</h3>
+          <p class="text-xs text-slate-400">When a first-time customer books, automatically assign them to the selected barber (if they offer that service). Leave empty for normal fair-share assignment.</p>
+          <div>
+            <label class="label">Barber for New Customers</label>
+            <select x-model="settings.new_customer_employee_id" class="input">
+              <option value="">— Normal fair-share assignment —</option>
+              <template x-for="e in employees.filter(e => e.is_active)" :key="e.id">
+                <option :value="String(e.id)" x-text="e.name"></option>
+              </template>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: Notifications ──────────────────────────────────────── -->
+      <div x-show="settingsTab==='notifications'" class="max-w-xl space-y-6">
+
+        <!-- Reminders -->
+        <div class="card space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-slate-700">🔔 Appointment Reminders</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Send customers a WhatsApp reminder before their appointment.</p>
+            </div>
+            <button @click="settings.reminder_enabled = settings.reminder_enabled === '1' ? '0' : '1'"
+              :class="settings.reminder_enabled === '1' ? 'bg-amber-500' : 'bg-slate-300'"
+              class="relative inline-flex h-6 w-11 rounded-full transition-colors flex-shrink-0">
+              <span :class="settings.reminder_enabled === '1' ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-4 w-4 rounded-full bg-white shadow mt-1 transition-transform"></span>
+            </button>
+          </div>
+          <div x-show="settings.reminder_enabled === '1'" class="space-y-3">
+            <div>
+              <label class="label">Hours before appointment</label>
+              <div class="flex items-center gap-3">
+                <input type="number" x-model="settings.reminder_hours" class="input w-24" min="1" max="168" placeholder="24">
+                <span class="text-sm text-slate-500">hours before</span>
+              </div>
+              <div class="flex gap-2 mt-2">
+                <template x-for="h in [2, 6, 12, 24, 48]" :key="h">
+                  <button type="button" @click="settings.reminder_hours = String(h)"
+                    class="px-2.5 py-1 rounded-lg text-xs font-medium border transition"
+                    :class="settings.reminder_hours == h ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-slate-600 border-slate-200 hover:border-amber-400'">
+                    <span x-text="h + 'h'"></span>
+                  </button>
+                </template>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400">💬 Edit message text in <button @click="nav('messages')" class="text-amber-500 underline">Bot Messages</button>.</p>
+          </div>
+        </div>
+
+        <!-- CS Numbers -->
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">📲 Customer Service Numbers</h3>
+          <p class="text-xs text-slate-400">These numbers receive WhatsApp notifications for: new bookings, cancellations, ratings, and first-time customers. Suggestions are also forwarded here. Up to 2 numbers.</p>
+          <div>
+            <label class="label">CS Number 1</label>
+            <input x-model="settings.cs_phone_1" class="input" placeholder="+597 XXX-XXXX">
+          </div>
+          <div>
+            <label class="label">CS Number 2 <span class="text-slate-400 font-normal">(optional)</span></label>
+            <input x-model="settings.cs_phone_2" class="input" placeholder="+597 XXX-XXXX">
+          </div>
+        </div>
+
+        <!-- Fixed Customer Limit -->
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">📱 Vaste Klanten</h3>
+          <p class="text-xs text-slate-400">Maximum aantal vaste klanten per kapper.</p>
+          <div>
+            <label class="label">Max vaste klanten per kapper</label>
+            <input x-model="settings.fixed_customer_limit" type="number" min="1" max="100" class="input w-32" placeholder="10">
+          </div>
+        </div>
+
+        <!-- Complaints & Suggestions -->
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">💬 Klachten & Suggesties</h3>
+          <p class="text-xs text-slate-400">Klanten die een klacht indienen via de bot worden doorverwezen naar dit nummer.</p>
+          <div>
+            <label class="label">Klachten Nummer</label>
+            <input x-model="settings.complaint_phone" class="input" placeholder="+597 XXX-XXXX">
+          </div>
+        </div>
+
+        <!-- Survey -->
+        <div class="card space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-slate-700">⭐ Post-Appointment Survey</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Ask customers to rate their visit after the appointment.</p>
+            </div>
+            <button @click="settings.survey_enabled = settings.survey_enabled === '1' ? '0' : '1'"
+              :class="settings.survey_enabled === '1' ? 'bg-amber-500' : 'bg-slate-300'"
+              class="relative inline-flex h-6 w-11 rounded-full transition-colors flex-shrink-0">
+              <span :class="settings.survey_enabled === '1' ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-4 w-4 rounded-full bg-white shadow mt-1 transition-transform"></span>
+            </button>
+          </div>
+          <div x-show="settings.survey_enabled === '1'">
+            <label class="label">Send survey after (minutes)</label>
+            <input type="number" x-model="settings.survey_delay_minutes" class="input w-32" min="5" max="1440" placeholder="30">
+            <p class="text-xs text-slate-400 mt-1">Minutes after appointment ends before the survey is sent.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── TAB: Rules ──────────────────────────────────────────────── -->
+      <div x-show="settingsTab==='rules'" class="max-w-xl space-y-6">
+
+        <!-- No-Show Warnings -->
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">🚫 No-Show Warnings</h3>
+          <p class="text-xs text-slate-400">Sends a WhatsApp warning when a customer's no-show count hits the threshold. Use <code class="bg-slate-100 px-1 rounded">{name}</code> and <code class="bg-slate-100 px-1 rounded">{count}</code> as placeholders.</p>
+          <div class="border border-amber-200 bg-amber-50 rounded-xl p-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-bold text-amber-700">⚠️ Warning 1 — After</span>
+              <input type="number" x-model="settings.warning_1_threshold" class="input w-16 text-center" min="1" max="20">
+              <span class="text-xs text-slate-500">no-show(s)</span>
+            </div>
+            <textarea rows="3" x-model="settings.warning_1_message" class="input text-sm" placeholder="Warning 1 message…"></textarea>
+          </div>
+          <div class="border border-orange-200 bg-orange-50 rounded-xl p-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-bold text-orange-700">🔶 Warning 2 — After</span>
+              <input type="number" x-model="settings.warning_2_threshold" class="input w-16 text-center" min="1" max="20">
+              <span class="text-xs text-slate-500">no-show(s)</span>
+            </div>
+            <textarea rows="3" x-model="settings.warning_2_message" class="input text-sm" placeholder="Warning 2 message…"></textarea>
+          </div>
+          <div class="border border-red-200 bg-red-50 rounded-xl p-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-bold text-red-700">🚫 Warning 3 — After</span>
+              <input type="number" x-model="settings.warning_3_threshold" class="input w-16 text-center" min="1" max="20">
+              <span class="text-xs text-slate-500">no-show(s)</span>
+            </div>
+            <textarea rows="3" x-model="settings.warning_3_message" class="input text-sm" placeholder="Warning 3 message…"></textarea>
+          </div>
+        </div>
+
+        <!-- Check-In Window -->
+        <div class="card space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-slate-700">🕐 Check-In Time Window</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Restrict QR check-in to a window around the appointment time. When off, check-in works at any time.</p>
+            </div>
+            <button @click="settings.checkin_window_enabled = settings.checkin_window_enabled === '1' ? '0' : '1'"
+              :class="settings.checkin_window_enabled === '1' ? 'bg-amber-500' : 'bg-slate-300'"
+              class="relative inline-flex h-6 w-11 rounded-full transition-colors flex-shrink-0">
+              <span :class="settings.checkin_window_enabled === '1' ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-4 w-4 rounded-full bg-white shadow mt-1 transition-transform"></span>
+            </button>
+          </div>
+          <div x-show="settings.checkin_window_enabled === '1'" class="space-y-2">
+            <label class="label">Allow check-in within</label>
+            <div class="flex items-center gap-3">
+              <input type="number" x-model="settings.checkin_window_minutes" class="input w-24" min="5" max="1440" placeholder="60">
+              <span class="text-sm text-slate-500">minutes of appointment time</span>
+            </div>
+            <p class="text-xs text-slate-400">E.g. 60 = can scan from 1 hour before until 1 hour after the appointment starts.</p>
+          </div>
+        </div>
+
+        <!-- Cancellation Window -->
+        <div class="card space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-slate-700">❌ Cancellation Window</h3>
+              <p class="text-xs text-slate-400 mt-0.5">When enabled, customers cannot cancel via WhatsApp within X minutes of their appointment. They must contact you directly instead.</p>
+            </div>
+            <button @click="settings.cancel_window_enabled = settings.cancel_window_enabled === '1' ? '0' : '1'"
+              :class="settings.cancel_window_enabled === '1' ? 'bg-amber-500' : 'bg-slate-300'"
+              class="relative inline-flex h-6 w-11 rounded-full transition-colors flex-shrink-0">
+              <span :class="settings.cancel_window_enabled === '1' ? 'translate-x-6' : 'translate-x-1'"
+                class="inline-block h-4 w-4 rounded-full bg-white shadow mt-1 transition-transform"></span>
+            </button>
+          </div>
+          <div x-show="settings.cancel_window_enabled === '1'" class="space-y-2">
+            <label class="label">Block cancellations within</label>
+            <div class="flex items-center gap-3">
+              <input type="number" x-model="settings.cancel_window_minutes" class="input w-24" min="30" max="10080" placeholder="120">
+              <span class="text-sm text-slate-500">minutes of the appointment</span>
+            </div>
+            <p class="text-xs text-slate-400"
+               x-text="'E.g. ' + settings.cancel_window_minutes + ' min = customers cannot cancel within ' + (settings.cancel_window_minutes >= 60 ? Math.floor(settings.cancel_window_minutes/60) + 'h ' + (settings.cancel_window_minutes%60 > 0 ? settings.cancel_window_minutes%60 + 'm ' : '') : settings.cancel_window_minutes + ' min ') + 'of their appointment.'">
+            </p>
+          </div>
+        </div>
+
+        <!-- Barber Scan PIN -->
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">🔐 Barber Scanner PIN</h3>
+          <p class="text-xs text-slate-400">Barbers use this PIN to unlock the QR scanner at <code class="bg-slate-100 px-1 rounded">/scan</code>. They never see the admin dashboard.</p>
+          <div>
+            <label class="label">PIN Code</label>
+            <input type="text" x-model="settings.barber_scan_pin" class="input w-32 font-mono text-center tracking-widest text-lg" placeholder="1234" maxlength="8">
+            <p class="text-xs text-slate-400 mt-1">Share this PIN with your barbers. Change it anytime from here.</p>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+            📱 Barber URL: <span class="font-mono font-semibold" x-text="(settings.shop_url || window.location.origin) + '/scan'"></span>
+          </div>
+        </div>
+
+        <!-- Human Takeover -->
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">👤 Human Takeover Keywords</h3>
+          <p class="text-xs text-slate-400">Type these keywords in any customer WhatsApp chat to pause or resume the bot for that specific conversation.</p>
+          <div>
+            <label class="label">Takeover Keyword</label>
+            <input x-model="settings.takeover_keyword" class="input font-mono" placeholder="#human">
+            <p class="text-xs text-slate-400 mt-1">Pauses the bot — bot goes completely silent for that chat.</p>
+          </div>
+          <div>
+            <label class="label">Release Keyword</label>
+            <input x-model="settings.release_keyword" class="input font-mono" placeholder="#bot">
+            <p class="text-xs text-slate-400 mt-1">Hands the conversation back to the bot.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── TAB: Integrations ───────────────────────────────────────── -->
+      <div x-show="settingsTab==='integrations'" class="max-w-xl space-y-6">
+        <div class="card space-y-4">
+          <div class="flex items-start justify-between">
+            <h3 class="font-bold text-slate-700">📅 Google Calendar</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold"
+              :class="{
+                'bg-emerald-100 text-emerald-700': calendarTestResult === 'ok',
+                'bg-red-100 text-red-600':         calendarTestResult === 'fail',
+                'bg-slate-100 text-slate-500':     !calendarTestResult,
+              }"
+              x-text="calendarTestResult === 'ok' ? '✅ Connected' : calendarTestResult === 'fail' ? '❌ Error' : 'Not tested'">
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Appointments appear automatically in this calendar. Manual busy blocks are also respected for availability.</p>
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+            <h4 class="text-sm font-semibold text-blue-800">🔲 QR Check-In URL</h4>
+            <div>
+              <label class="label">Public Shop URL</label>
+              <input x-model="settings.shop_url" class="input font-mono text-xs" placeholder="https://your-ngrok-or-domain.com">
+              <p class="text-xs text-slate-400 mt-1">Used to generate QR check-in links. Set to your ngrok URL or VPS domain. <span class="text-amber-600 font-medium">Update this whenever your ngrok URL changes.</span></p>
+            </div>
+            <div x-show="settings.shop_url" class="text-xs text-blue-700 break-all">
+              Example link: <span class="font-mono" x-text="(settings.shop_url || '').replace(/\/$/, '') + '/api/checkin/AB3K'"></span>
+            </div>
+          </div>
+          <div>
+            <label class="label">Calendar ID</label>
+            <input x-model="settings.google_calendar_id" class="input font-mono text-xs"
+              placeholder="yourname@gmail.com"
+              @input="calendarTestResult = null">
+            <p class="text-xs text-slate-400 mt-1">
+              Google Calendar → ⚙️ Settings → pick your calendar → <em>Integrate calendar</em> → Calendar ID
+            </p>
+          </div>
+          <div x-show="calendarTestResult === 'ok'" class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+            ✅ Connected to <strong x-text="calendarTestName"></strong>
+            <span class="text-emerald-500 text-xs ml-1" x-text="calendarTestTz ? '(' + calendarTestTz + ')' : ''"></span>
+          </div>
+          <div x-show="calendarTestResult === 'fail'" class="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+            ❌ <span x-text="calendarTestError"></span>
+          </div>
+          <div class="flex gap-2">
+            <button @click="testCalendar()" class="btn-secondary text-xs flex items-center gap-1.5" :disabled="calendarTesting">
+              <svg x-show="calendarTesting" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+              </svg>
+              <span x-text="calendarTesting ? 'Testing…' : '🔗 Test Connection'"></span>
+            </button>
+            <button @click="saveSettings(); testCalendar()" class="btn-primary text-xs">💾 Save & Test</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB: Security ──────────────────────────────────────────── -->
+      <div x-show="settingsTab==='security'" class="max-w-md">
+        <div class="card space-y-4">
+          <h3 class="font-bold text-slate-700">🔒 Change Dashboard Password</h3>
+          <div>
+            <label class="label">Current Password</label>
+            <input type="password" x-model="pwForm.current" class="input" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <div>
+            <label class="label">New Password</label>
+            <input type="password" x-model="pwForm.newPw" class="input" placeholder="••••••••" autocomplete="new-password">
+          </div>
+          <div>
+            <label class="label">Confirm New Password</label>
+            <input type="password" x-model="pwForm.confirm" class="input" placeholder="••••••••" autocomplete="new-password"
+                   @keydown.enter="changePassword()">
+          </div>
+          <p x-show="pwForm.error" class="text-red-500 text-sm" x-text="pwForm.error"></p>
+          <button @click="changePassword()" class="btn-primary w-full">🔒 Change Password</button>
+        </div>
+
+        <!-- WhatsApp Number -->
+        <div class="card mt-6">
+          <h3 class="text-base font-semibold text-slate-800 mb-1">📱 WhatsApp Number</h3>
+          <p class="text-sm text-slate-500 mb-4">Use this when switching the bot to a different WhatsApp number. It wipes the saved session and immediately shows a fresh QR code to scan.</p>
+          <button @click="resetWaSession()" class="btn-secondary" style="border-color:#f59e0b;color:#b45309;">
+            🔁 Change WhatsApp Number
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-8 flex gap-3 items-center" x-show="settingsTab !== 'security'">
+        <button @click="saveSettings()" class="btn-primary">💾 Save Settings</button>
+        <span x-show="settingsSaved" class="text-emerald-500 text-sm font-medium">✅ Saved!</span>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Employee Modal ──────────────────────────────────────────────────────── -->
+<template x-if="showEmployeeModal">
+  <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+       @click.self="showEmployeeModal=false">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-slate-800" x-text="editingEmployee ? 'Edit Barber' : 'Add Barber'"></h3>
+        <button @click="showEmployeeModal=false" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 mb-5 bg-slate-100 p-1 rounded-xl">
+        <button @click="employeeTab='general'"   :class="employeeTab==='general'   ? 'bg-white shadow text-slate-800 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-1.5 rounded-lg text-sm transition">👤 General</button>
+        <button @click="employeeTab='services'"  :class="employeeTab==='services'  ? 'bg-white shadow text-slate-800 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-1.5 rounded-lg text-sm transition">✂️ Services</button>
+        <button @click="employeeTab='customers'" :class="employeeTab==='customers' ? 'bg-white shadow text-slate-800 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-1.5 rounded-lg text-sm transition">📱 Fixed Customers</button>
+      </div>
+
+      <!-- Tab: General -->
+      <div x-show="employeeTab==='general'" class="space-y-4">
+        <div>
+          <label class="label">Full Name *</label>
+          <input x-model="employeeForm.name" class="input" placeholder="Jayden" required>
+        </div>
+        <div>
+          <label class="label">Phone Number</label>
+          <input x-model="employeeForm.phone" class="input" placeholder="+597 XXX-XXXX">
+        </div>
+        <div>
+          <label class="label">Color <span class="normal-case font-normal text-slate-400">— matches Google Calendar</span></label>
+          <div class="flex gap-2 flex-wrap mt-1">
+            <template x-for="c in gcalColors" :key="c.hex">
+              <button type="button" @click="employeeForm.color = c.hex"
+                :title="c.name"
+                class="w-8 h-8 rounded-full border-2 transition"
+                :class="employeeForm.color === c.hex ? 'border-slate-800 scale-110' : 'border-transparent'"
+                :style="`background:${c.hex}`"></button>
+            </template>
+          </div>
+          <p class="text-xs text-slate-400 mt-1" x-text="gcalColors.find(c => c.hex === employeeForm.color)?.name || ''"></p>
+        </div>
+        <div>
+          <label class="label">Google Calendar ID <span class="normal-case font-normal">(optional)</span></label>
+          <input x-model="employeeForm.google_calendar_id" class="input font-mono text-xs"
+            placeholder="example@gmail.com or calendar ID">
+          <p class="text-xs text-slate-400 mt-1">Events for this barber will sync to this calendar.</p>
+        </div>
+        <div>
+          <label class="label">Fallback Barbers <span class="normal-case font-normal text-slate-400">(optional, in priority order)</span></label>
+          <p class="text-xs text-slate-400 mb-2">When this barber is unavailable, fixed customers are redirected down this list until one has availability.</p>
+          <!-- Priority list -->
+          <div class="space-y-1 mb-2">
+            <template x-for="(fbId, idx) in employeeForm.fallbackEmployeeIds" :key="fbId">
+              <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                <span class="text-xs font-bold text-slate-400 w-5" x-text="(idx + 1) + '.'"></span>
+                <span class="text-sm text-slate-700 flex-1" x-text="employees.find(e => String(e.id) === String(fbId))?.name || '(unknown)'"></span>
+                <button x-show="idx > 0" @click="employeeForm.fallbackEmployeeIds.splice(idx-1, 2, employeeForm.fallbackEmployeeIds[idx], employeeForm.fallbackEmployeeIds[idx-1])" class="text-slate-400 hover:text-slate-600 text-xs px-1" title="Move up">▲</button>
+                <button x-show="idx < employeeForm.fallbackEmployeeIds.length - 1" @click="employeeForm.fallbackEmployeeIds.splice(idx, 2, employeeForm.fallbackEmployeeIds[idx+1], employeeForm.fallbackEmployeeIds[idx])" class="text-slate-400 hover:text-slate-600 text-xs px-1" title="Move down">▼</button>
+                <button @click="employeeForm.fallbackEmployeeIds = employeeForm.fallbackEmployeeIds.filter((_, i) => i !== idx)" class="text-red-400 hover:text-red-600 text-xs font-semibold">✕</button>
+              </div>
+            </template>
+            <p x-show="employeeForm.fallbackEmployeeIds.length === 0" class="text-xs text-slate-400 italic py-1">No fallback barbers set.</p>
+          </div>
+          <!-- Add fallback -->
+          <div x-show="employees.filter(e => e.is_active && String(e.id) !== String(editingEmployee?.id) && !employeeForm.fallbackEmployeeIds.includes(String(e.id))).length > 0" class="flex gap-2">
+            <select x-model="employeeForm.newFallbackId" class="input flex-1 text-sm">
+              <option value="">— Add fallback barber —</option>
+              <template x-for="e in employees.filter(e => e.is_active && String(e.id) !== String(editingEmployee?.id) && !employeeForm.fallbackEmployeeIds.includes(String(e.id)))" :key="e.id">
+                <option :value="String(e.id)" x-text="e.name"></option>
+              </template>
+            </select>
+            <button @click="if(employeeForm.newFallbackId){ employeeForm.fallbackEmployeeIds = [...employeeForm.fallbackEmployeeIds, employeeForm.newFallbackId]; employeeForm.newFallbackId=''; }" class="btn-secondary text-sm px-3">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Services -->
+      <div x-show="employeeTab==='services'" class="space-y-3">
+        <p class="text-xs text-slate-400">Uncheck services this barber cannot perform. New services are enabled for everyone by default.</p>
+        <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+          <template x-for="s in services.filter(s=>s.is_active)" :key="s.id">
+            <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+              <input type="checkbox"
+                :checked="!employeeForm.excluded_service_ids.includes(s.id)"
+                @change="employeeForm.excluded_service_ids.includes(s.id)
+                  ? employeeForm.excluded_service_ids = employeeForm.excluded_service_ids.filter(id=>id!==s.id)
+                  : employeeForm.excluded_service_ids = [...employeeForm.excluded_service_ids, s.id]"
+                class="w-4 h-4 rounded accent-amber-500">
+              <span class="text-lg leading-none" x-text="s.emoji || '✂️'"></span>
+              <span class="text-sm text-slate-700 font-medium" x-text="s.name"></span>
+              <span class="text-xs text-slate-400 ml-auto" x-text="s.duration + ' min'"></span>
+            </label>
+          </template>
+        </div>
+        <p class="text-xs text-slate-400" x-show="employeeForm.excluded_service_ids.length === 0">⚡ Can perform <strong>all services</strong></p>
+        <p class="text-xs text-amber-600" x-show="employeeForm.excluded_service_ids.length > 0"
+           x-text="`⚡ Cannot do ${employeeForm.excluded_service_ids.length} service(s) — can do ${services.filter(s=>s.is_active).length - employeeForm.excluded_service_ids.length} of ${services.filter(s=>s.is_active).length}`"></p>
+      </div>
+
+      <!-- Tab: Fixed Customers -->
+      <div x-show="employeeTab==='customers'" class="space-y-3">
+        <p class="text-xs text-slate-400">When these customers message the bot, only this barber's availability will be shown. Pick from customers who have already chatted with the bot.</p>
+
+        <!-- Selected customers -->
+        <div class="space-y-1">
+          <template x-for="cid in employeeForm.fixedCustomerIds" :key="cid">
+            <div class="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+              <div>
+                <span class="text-sm font-medium text-slate-700" x-text="customers.find(c=>c.id===cid)?.name || '(unknown)'"></span>
+                <span class="text-xs text-slate-400 font-mono ml-1"
+                      x-text="customers.find(c=>c.id===cid)?.phones?.[0] ? '···' + String(customers.find(c=>c.id===cid).phones[0]).slice(-6) : ''"></span>
+              </div>
+              <button @click="employeeForm.fixedCustomerIds = employeeForm.fixedCustomerIds.filter(id => id !== cid)"
+                class="text-red-400 hover:text-red-600 text-xs font-semibold">✕ Remove</button>
+            </div>
+          </template>
+          <p x-show="employeeForm.fixedCustomerIds.length === 0" class="text-xs text-slate-400 italic py-1">No customers assigned yet.</p>
+        </div>
+
+        <!-- Search to add -->
+        <div x-show="employeeForm.fixedCustomerIds.length < (parseInt(settings.fixed_customer_limit) || 10)">
+          <label class="label">Add Customer</label>
+          <input x-model="fixedCustomerSearch" class="input text-sm" placeholder="Type a name to search…" autocomplete="off">
+          <div x-show="fixedCustomerSearch.length > 0" class="mt-1 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <template x-for="c in customers.filter(c =>
+                c.name && c.name.toLowerCase().includes(fixedCustomerSearch.toLowerCase()) &&
+                !employeeForm.fixedCustomerIds.includes(c.id)
+              ).slice(0, 6)" :key="c.id">
+              <button @click="employeeForm.fixedCustomerIds = [...employeeForm.fixedCustomerIds, c.id]; fixedCustomerSearch = ''"
+                class="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 border-b border-slate-100 last:border-0 flex items-center justify-between gap-3">
+                <span class="font-medium text-slate-700" x-text="c.name"></span>
+                <span class="text-xs text-slate-400 font-mono flex-shrink-0"
+                      x-text="(c.phones && c.phones[0]) ? '···' + String(c.phones[0]).slice(-6) : ''"></span>
+              </button>
+            </template>
+            <p x-show="customers.filter(c => c.name && c.name.toLowerCase().includes(fixedCustomerSearch.toLowerCase()) && !employeeForm.fixedCustomerIds.includes(c.id)).length === 0"
+               class="text-xs text-slate-400 px-3 py-2 italic">No matching customers found.</p>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-400" x-text="employeeForm.fixedCustomerIds.length + ' of ' + (parseInt(settings.fixed_customer_limit) || 10) + ' slots used'"></p>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button @click="saveEmployee()" class="btn-primary flex-1">
+          <span x-text="editingEmployee ? 'Save Changes' : 'Add Barber'"></span>
+        </button>
+        <button @click="showEmployeeModal=false" class="btn-secondary flex-1">Cancel</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ── Service Modal ───────────────────────────────────────────────────────── -->
+<template x-if="showServiceModal">
+  <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+       @click.self="showServiceModal=false">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-lg font-bold text-slate-800" x-text="editingService ? 'Edit Service' : 'Add Service'"></h3>
+        <button @click="showServiceModal=false" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="label">Emoji</label>
+            <input x-model="serviceForm.emoji" class="input text-center text-2xl" placeholder="✂️" maxlength="4">
+          </div>
+          <div>
+            <label class="label">Name *</label>
+            <input x-model="serviceForm.name" class="input" placeholder="Haircut">
+          </div>
+        </div>
+        <div>
+          <label class="label">Description</label>
+          <textarea x-model="serviceForm.description" class="input" rows="4" placeholder="Short description shown to customers&#10;• Use bullet points&#10;• Add multiple lines"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="label">Duration (minutes)</label>
+            <input type="number" x-model="serviceForm.duration" class="input" min="5" step="5" placeholder="30">
+          </div>
+          <div>
+            <label class="label">Price (<span x-text="settings.currency"></span>)</label>
+            <input type="number" x-model="serviceForm.price" class="input" min="0" step="0.50" placeholder="35">
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button @click="saveService()" class="btn-primary flex-1" x-text="editingService ? 'Save Changes' : 'Add Service'"></button>
+        <button @click="showServiceModal=false" class="btn-secondary flex-1">Cancel</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- ── Toast notifications ─────────────────────────────────────────────────── -->
+<div x-show="toast" x-transition class="fixed bottom-6 right-6 bg-slate-800 text-white px-5 py-3 rounded-xl shadow-xl text-sm" x-text="toast"></div>
+
+<script>
+function app() {
+  return {
+    // Auth
+    authenticated: false,
+    loginPassword: '',
+    loginError: '',
+
+    // Nav
+    page: 'dashboard',
+
+    // Data
+    stats: {},
+    todayAppointments: [],
+    appointments: [],
+    employees: [],
+    services: [],
+    botMessages: [],
+    settings: { currency: 'SRD', shop_name: '' },
+    weeklyHours: [],
+    hoursLoading: false,
+    apptFilter: { date: '', employee_id: '', status: '' },
+    apptSearch: '',
+    selectedHoursEmployee: null,
+
+    // Surinamese holidays
+    holidayYear:    new Date().getFullYear(),
+    holidayPreview: [],
+    holidaySyncing: false,
+
+    // Leave management
+    leaves:         [],
+    leaveMonth:     new Date().toISOString().slice(0, 7), // YYYY-MM
+    leaveForm:      { employee_id: '', start_date: '', end_date: '', reason: '' },
+    leaveSaving:    false,
+
+    // Gallery
+    photos:          [],
+    photoTagFilter:  '',
+    photoUploading:  false,
+    editingPhoto:    null,   // { id, tags, caption }
+
+    // Customer profiles
+    customers: [],
+    customerFilter: 'all',  // 'all' | 'noshows' | 'blocked'
+    addPhoneInputs: {},      // { customerId: phoneValue }
+    blockReasonInputs: {},   // { customerId: reasonValue }
+    editingCustomerName: null,   // { id, value }
+    customerStatsModal: null,    // { customer, title, items, loading }
+
+    // Human takeover — paused chats
+    pausedChats: [],
+
+    // WhatsApp connection state
+    waStatus: { status: 'loading', lastUpdated: null },
+
+    // Google Calendar color palette (loaded from /api/colors)
+    gcalColors: [],
+
+    // Google Calendar test state
+    calSyncing:         false,
+    calendarTesting:    false,
+    calendarTestResult: null,   // null | 'ok' | 'fail'
+    calendarTestName:   '',
+    calendarTestTz:     '',
+    calendarTestError:  '',
+
+    // QR Check-In modal (show QR for a specific appointment)
+    showQRModal: false,
+    qrLoading:   false,
+    qrData:      null,
+    qrAppt:      null,
+
+    // QR Scanner modal (barber scans customer's QR)
+    showScanModal: false,
+    scanError:     '',
+    _scanner:      null,
+
+    // Settings tabs
+    settingsTab: 'shop',
+
+    // Employee modal tab
+    employeeTab: 'general',
+
+    fixedCustomerSearch: '',
+
+    // Menu order
+    menuItems: [],
+    menuSaved: false,
+    menuEditIdx: null,
+    menuEditLang: 'nl',
+    menuLangs: [
+      { code: 'en', name: 'English', flag: '🇬🇧' },
+      { code: 'nl', name: 'Dutch',   flag: '🇳🇱' },
+      { code: 'es', name: 'Spanish', flag: '🇪🇸' },
+      { code: 'fr', name: 'French',  flag: '🇫🇷' },
+    ],
+    menuIcons:  { booking:'📅', hours:'🕐', location:'📍', contact:'📞', gallery:'📸', language:'🌐', manage:'📋', training:'🎓', feedback:'💬' },
+    menuLabels: { booking:'Book an Appointment', hours:'Opening Hours', location:'Location', contact:'Contact Us', gallery:'Styles & Gallery', language:'Change Language', manage:'Manage My Booking', training:'Barber Training', feedback:'Complaints & Suggestions' },
+
+    // Keywords
+    keywords: [],
+    newKeyword: { keyword: '', action: 'booking' },
+
+    // Training
+    trainingVideos: [],
+    trainingUploadFile: null,
+    trainingUploadName: '',
+    trainingUploadCaption: '',
+
+    // UI state
+    botPaused: false,
+    showEmployeeModal: false,
+    showServiceModal: false,
+    showNewApptModal: false,
+    newApptSaving: false,
+    newApptError: '',
+
+    // Closed Dates / Blocks
+    blocks: [],
+    blockForm: { date: '', employee_id: '', all_day: '1', start_time: '12:00', end_time: '13:00', reason: '' },
+    blockSaving: false,
+    blockError: '',
+
+    // Walk-in
+    showWalkInModal: false,
+    walkInForm: { service_id: '', employee_id: '', time: '', customer_name: '', customer_phone: '' },
+    walkInSlots: [],
+    walkInSlotsLoading: false,
+    walkInSaving: false,
+    walkInError: '',
+    newApptForm: { customer_name: '', customer_phone: '', service_id: '', employee_id: '', date: '', time: '', notes: '' },
+    newApptSlots: [],
+    newApptSlotsLoading: false,
+    newApptDaySchedule: [],
+    newApptScheduleLoading: false,
+    showScheduleModal: false,
+    scheduleEmployee: null,
+    scheduleDate: '',
+    scheduleDayAppts: [],
+    scheduleLoading: false,
+    editingEmployee: null,
+    editingService: null,
+    employeeForm: { name: '', phone: '', color: '#f59e0b', google_calendar_id: '', service_ids: [] },
+    serviceForm: { name: '', emoji: '✂️', description: '', duration: 30, price: 0 },
+    hoursSaved: false,
+    messagesSaved: false,
+    settingsSaved: false,
+    pwForm: { current: '', newPw: '', confirm: '', error: '' },
+    toast: '',
+
+    get shopName() { return this.settings.shop_name || 'Barbershop Admin'; },
+
+    async init() {
+      // Poll WhatsApp status from the start (even before login — QR must be visible pre-auth)
+      await this.loadWhatsappStatus();
+      setInterval(() => this.loadWhatsappStatus(), 3000);
+
+      const { authenticated } = await this.api('GET', '/api/auth/status');
+      if (authenticated) {
+        this.authenticated = true;
+        await this.bootstrap();
+      }
+    },
+
+    async loadWhatsappStatus() {
+      try {
+        const r = await fetch('/api/whatsapp/status', { cache: 'no-store' });
+        if (!r.ok) return;
+        const data = await r.json();
+        this.waStatus = data;
+      } catch (_) {}
+    },
+
+    async startBot() {
+      this.showToast('▶️ Starting WhatsApp bot…');
+      const res = await this.api('POST', '/api/whatsapp/reconnect');
+      if (res.error) this.showToast('❌ ' + res.error);
+      else this.showToast('📱 Bot starting — scan the QR code when it appears');
+      await this.loadWhatsappStatus();
+    },
+
+    async reconnectBot() {
+      this.showToast('🔄 Reconnecting WhatsApp…');
+      const res = await this.api('POST', '/api/whatsapp/reconnect');
+      if (res.error) this.showToast('❌ ' + res.error);
+      await this.loadWhatsappStatus();
+    },
+
+    async resetWaSession() {
+      if (!confirm('⚠️ This will wipe the current WhatsApp session and show a fresh QR code.\n\nThe bot will be disconnected until you scan with the new (or same) number.\n\nContinue?')) return;
+      this.showToast('🔁 Clearing session…');
+      const res = await this.api('POST', '/api/whatsapp/reset-session');
+      if (res.error) { this.showToast('❌ ' + res.error); return; }
+      this.showToast('✅ Session cleared — scan the QR to link a new number');
+      await this.loadWhatsappStatus();
+    },
+
+    get waStatusLabel() {
+      const map = {
+        'loading':       { text: 'Loading…',       dot: 'bg-slate-400' },
+        'not-running':   { text: 'Not running',     dot: 'bg-slate-400' },
+        'initializing':  { text: 'Starting…',       dot: 'bg-yellow-400 animate-pulse' },
+        'qr':            { text: 'Scan QR code',    dot: 'bg-yellow-400 animate-pulse' },
+        'authenticated': { text: 'Connecting…',     dot: 'bg-blue-400 animate-pulse' },
+        'ready':         { text: 'Connected',        dot: 'bg-emerald-400' },
+        'disconnected':  { text: 'Reconnecting…',   dot: 'bg-red-400 animate-pulse' },
+      };
+      return map[this.waStatus?.status] || map['loading'];
+    },
+
+    async login() {
+      this.loginError = '';
+      const res = await this.api('POST', '/api/auth/login', { password: this.loginPassword });
+      if (res.ok) {
+        this.authenticated = true;
+        this.loginPassword = '';
+        await this.bootstrap();
+      } else {
+        this.loginError = 'Incorrect password';
+      }
+    },
+
+    async logout() {
+      await this.api('POST', '/api/auth/logout');
+      this.authenticated = false;
+    },
+
+    async bootstrap() {
+      [this.settings, this.employees, this.gcalColors, this.services] = await Promise.all([
+        this.api('GET', '/api/settings'),
+        this.api('GET', '/api/employees'),
+        this.api('GET', '/api/colors'),
+        this.api('GET', '/api/services'),
+      ]);
+      this.botPaused = this.settings.bot_paused === '1';
+      await this.loadDashboard();
+    },
+
+    async nav(p) {
+      this.page = p;
+      if (p === 'dashboard')    await this.loadDashboard();
+      if (p === 'appointments') await this.loadAppointments();
+      if (p === 'employees')    this.employees = await this.api('GET', '/api/employees');
+      if (p === 'hours')        await this.loadHours();
+      if (p === 'blocks')       await this.loadBlocks();
+      if (p === 'services')     this.services = await this.api('GET', '/api/services');
+      if (p === 'blocks') {
+        this.holidayPreview = await this.api('GET', `/api/holidays/${this.holidayYear}`);
+      }
+      if (p === 'gallery') {
+        this.photos         = await this.api('GET', '/api/photos');
+        this.photoTagFilter = '';
+      }
+      if (p === 'leave') {
+        this.leaveMonth = new Date().toISOString().slice(0, 7); // always open on current month
+        await this.loadLeaves();
+      }
+      if (p === 'training') {
+        this.settings        = await this.api('GET', '/api/settings');
+        this.trainingVideos  = await this.api('GET', '/api/training/videos');
+      }
+      if (p === 'customers')    this.customers   = await this.api('GET', '/api/customers');
+      if (p === 'menu')         this.menuItems   = await this.api('GET', '/api/menu');
+      if (p === 'keywords')     this.keywords    = await this.api('GET', '/api/keywords');
+      if (p === 'messages')     this.botMessages = await this.api('GET', '/api/messages');
+      if (p === 'settings') {
+        this.settings = await this.api('GET', '/api/settings');
+        this.botPaused = this.settings.bot_paused === '1';
+      }
+    },
+
+    async loadDashboard() {
+      const data = await this.api('GET', '/api/dashboard');
+      this.stats             = data.stats || {};
+      this.todayAppointments = data.today || [];
+      this.pausedChats       = await this.api('GET', '/api/chat-pauses');
+    },
+
+    async loadAppointments() {
+      const params = new URLSearchParams();
+      if (this.apptFilter.date)        params.set('date',        this.apptFilter.date);
+      if (this.apptFilter.employee_id) params.set('employee_id', this.apptFilter.employee_id);
+      if (this.apptFilter.status)      params.set('status',      this.apptFilter.status);
+      this.appointments = await this.api('GET', `/api/appointments?${params}`);
+    },
+
+    async loadHours() {
+      this.hoursLoading = true;
+      this.weeklyHours  = [];
+      const url = this.selectedHoursEmployee != null
+        ? `/api/hours/${this.selectedHoursEmployee}`
+        : '/api/hours';
+      this.weeklyHours  = await this.api('GET', url);
+      this.hoursLoading = false;
+    },
+
+    async saveHours() {
+      const url = this.selectedHoursEmployee != null
+        ? `/api/hours/${this.selectedHoursEmployee}`
+        : '/api/hours';
+      const res = await this.api('PUT', url, this.weeklyHours);
+      if (!this.authenticated) { this.showToast('❌ Session expired — please log in again.'); return; }
+      if (res.error) { this.showToast('❌ Failed to save: ' + res.error); return; }
+      this.hoursSaved = true;
+      setTimeout(() => this.hoursSaved = false, 3000);
+      this.showToast('✅ Hours saved!');
+    },
+
+    async saveMessages() {
+      const obj = Object.fromEntries(this.botMessages.map(m => [m.key, m.value]));
+      const res = await this.api('PUT', '/api/messages', obj);
+      if (!this.authenticated) { this.showToast('❌ Session expired — please log in again.'); return; }
+      if (res.error) { this.showToast('❌ Failed to save: ' + res.error); return; }
+      this.messagesSaved = true;
+      setTimeout(() => this.messagesSaved = false, 3000);
+      this.showToast('✅ Messages saved!');
+    },
+
+    async changePassword() {
+      this.pwForm.error = '';
+      if (!this.pwForm.current)  { this.pwForm.error = 'Enter your current password.'; return; }
+      if (!this.pwForm.newPw)    { this.pwForm.error = 'Enter a new password.'; return; }
+      if (this.pwForm.newPw !== this.pwForm.confirm) { this.pwForm.error = 'New passwords do not match.'; return; }
+      const res = await this.api('POST', '/api/auth/change-password', { current: this.pwForm.current, newPassword: this.pwForm.newPw });
+      if (res.error) { this.pwForm.error = res.error; return; }
+      this.pwForm = { current: '', newPw: '', confirm: '', error: '' };
+      this.showToast('✅ Password changed! Use your new password next time you log in.');
+    },
+
+    async saveSettings() {
+      const res = await this.api('PUT', '/api/settings', this.settings);
+      if (!this.authenticated) { this.showToast('❌ Session expired — please log in again.'); return; }
+      if (res.error) { this.showToast('❌ Failed to save: ' + res.error); return; }
+      this.settingsSaved = true;
+      setTimeout(() => this.settingsSaved = false, 3000);
+      this.showToast('✅ Settings saved!');
+    },
+
+    async uploadTrainingVideo() {
+      const file = this.trainingUploadFile;
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const result = await this.api('POST', '/api/training/videos', {
+            base64: e.target.result,
+            filename: file.name,
+            caption: this.trainingUploadCaption,
+          });
+          this.trainingVideos = await this.api('GET', '/api/training/videos');
+          this.trainingUploadFile    = null;
+          this.trainingUploadName    = '';
+          this.trainingUploadCaption = '';
+          this.showToast('✅ Training video uploaded!');
+        } catch (err) {
+          this.showToast('❌ Upload failed: ' + (err.message || 'Unknown error'));
+        }
+      };
+      reader.readAsDataURL(file);
+    },
+
+    async saveTrainingCaption(video) {
+      try {
+        await this.api('PUT', `/api/training/videos/${video.id}`, { caption: video.caption });
+        this.showToast('✅ Caption saved!');
+      } catch (err) {
+        this.showToast('❌ Failed to save caption.');
+      }
+    },
+
+    async deleteTrainingVideoById(id) {
+      if (!confirm('Remove this training video?')) return;
+      await this.api('DELETE', `/api/training/videos/${id}`);
+      this.trainingVideos = this.trainingVideos.filter(v => v.id !== id);
+      this.showToast('🗑️ Video removed.');
+    },
+
+    async testCalendar() {
+      const id = this.settings.google_calendar_id?.trim();
+      if (!id) {
+        this.calendarTestResult = 'fail';
+        this.calendarTestError  = 'Please enter a Calendar ID first.';
+        return;
+      }
+      this.calendarTesting    = true;
+      this.calendarTestResult = null;
+      try {
+        const res = await this.api('POST', '/api/settings/test-calendar', { calendarId: id });
+        if (res.ok) {
+          this.calendarTestResult = 'ok';
+          this.calendarTestName   = res.name || id;
+          this.calendarTestTz     = res.timezone || '';
+        } else {
+          this.calendarTestResult = 'fail';
+          this.calendarTestError  = res.error || 'Unknown error';
+        }
+      } catch (e) {
+        this.calendarTestResult = 'fail';
+        this.calendarTestError  = e.message || 'Request failed';
+      } finally {
+        this.calendarTesting = false;
+      }
+    },
+
+    async toggleBotPause() {
+      this.botPaused = !this.botPaused;
+      await this.api('PUT', '/api/settings', { bot_paused: this.botPaused ? '1' : '0' });
+      this.showToast(this.botPaused ? '⏸ Bot paused' : '▶️ Bot resumed');
+    },
+
+    // Employee CRUD
+    async openEmployeeModal(emp = null) {
+      this.editingEmployee = emp;
+      this.employeeTab = 'general';
+      this.fixedCustomerSearch = '';
+      // Load customers list if not already loaded (needed for Fixed Customers tab)
+      if (!this.customers.length) {
+        this.customers = await this.api('GET', '/api/customers');
+      }
+      // Reverse-map stored phone IDs → customer records
+      const storedPhones = emp?.fixed_customer_phones || [];
+      const fixedCustomerIds = [];
+      storedPhones.forEach(phone => {
+        const c = this.customers.find(c => Array.isArray(c.phones) && c.phones.includes(phone));
+        if (c && !fixedCustomerIds.includes(c.id)) fixedCustomerIds.push(c.id);
+      });
+      this.employeeForm = emp
+        ? { name: emp.name, phone: emp.phone, color: emp.color, google_calendar_id: emp.google_calendar_id, excluded_service_ids: emp.excluded_service_ids || [], scan_pin: emp.scan_pin || '', fixedCustomerIds, fallbackEmployeeIds: (emp.fallback_employee_ids || []).map(String), newFallbackId: '' }
+        : { name: '', phone: '', color: '#f59e0b', google_calendar_id: '', excluded_service_ids: [], scan_pin: '', fixedCustomerIds: [], fallbackEmployeeIds: [], newFallbackId: '' };
+      this.showEmployeeModal = true;
+    },
+
+    // New Appointment (manual)
+    openNewApptModal() {
+      this.newApptForm = { customer_name: '', customer_phone: '', service_id: '', employee_id: '', date: new Date().toISOString().slice(0,10), time: '', notes: '' };
+      this.newApptError = '';
+      this.newApptSaving = false;
+      this.newApptSlots = [];
+      this.newApptDaySchedule = [];
+      this.showNewApptModal = true;
+    },
+
+    // Returns active employees who can perform the given service.
+    // Mirrors bot logic: excluded_service_ids holds what they CANNOT do.
+    // New services appear for everyone automatically (not in anyone's exclusion list).
+    employeesForService(serviceId) {
+      if (!serviceId) return this.employees.filter(e => e.is_active);
+      return this.employees.filter(e =>
+        e.is_active && !e.excluded_service_ids?.includes(serviceId)
+      );
+    },
+
+    async onNewApptServiceChange() {
+      this.newApptForm.time = '';
+      this.newApptSlots = [];
+
+      // If current barber can't do the newly selected service, clear them
+      const { service_id, date } = this.newApptForm;
+      let { employee_id } = this.newApptForm;
+      if (service_id && employee_id) {
+        const stillValid = this.employeesForService(service_id).some(e => String(e.id) === String(employee_id));
+        if (!stillValid) {
+          this.newApptForm.employee_id = '';
+          employee_id = '';
+        }
+      }
+
+      // Re-read after possible reset above
+      const eid = this.newApptForm.employee_id;
+
+      // Load day schedule whenever barber + date are set (no service needed)
+      if (eid && date) {
+        this.newApptScheduleLoading = true;
+        const allAppts = await this.api('GET', `/api/appointments?employee_id=${eid}&date=${date}`);
+        this.newApptDaySchedule = Array.isArray(allAppts)
+          ? allAppts.filter(a => a.status !== 'cancelled').sort((a,b) => a.start_time.localeCompare(b.start_time))
+          : [];
+        this.newApptScheduleLoading = false;
+      } else {
+        this.newApptDaySchedule = [];
+      }
+
+      // Load available slots only when all three are set
+      if (!service_id || !eid || !date) return;
+      const svc = this.services.find(s => s.id === service_id);
+      if (!svc) return;
+      this.newApptSlotsLoading = true;
+      const slots = await this.api('GET', `/api/slots?employee_id=${eid}&date=${date}&duration=${svc.duration}`);
+      this.newApptSlotsLoading = false;
+      this.newApptSlots = Array.isArray(slots) ? slots : [];
+    },
+
+    async saveNewAppt() {
+      this.newApptError = '';
+      const f = this.newApptForm;
+      if (!f.customer_name || !f.customer_phone || !f.service_id || !f.employee_id || !f.date || !f.time) {
+        this.newApptError = 'Please fill in all required fields.'; return;
+      }
+      const svc = this.services.find(s => s.id === f.service_id);
+      if (!svc) { this.newApptError = 'Service not found.'; return; }
+
+      const startTime = new Date(`${f.date}T${f.time}:00`);
+      const endTime   = new Date(startTime.getTime() + svc.duration * 60000);
+      const emp       = f.employee_id ? this.employees.find(e => String(e.id) === String(f.employee_id)) : null;
+
+      const body = {
+        customer_name:    f.customer_name,
+        customer_phone:   f.customer_phone,
+        service_id:       svc.id,
+        service_name:     svc.name,
+        service_emoji:    svc.emoji || '',
+        service_duration: svc.duration,
+        service_price:    svc.price,
+        employee_id:      emp?.id || null,
+        start_time:       startTime.toISOString(),
+        end_time:         endTime.toISOString(),
+        notes:            f.notes || '',
+      };
+
+      this.newApptSaving = true;
+      const res = await this.api('POST', '/api/appointments', body);
+      this.newApptSaving = false;
+
+      if (res.ok) {
+        this.showNewApptModal = false;
+        await this.loadAppointments();
+        await this.loadDashboard();
+        const calMsg = res.calendarSynced ? ' & synced to Google Calendar ✅' : '';
+        this.showToast(`✅ Appointment created${calMsg}!`);
+      } else {
+        this.newApptError = res.error || 'Failed to save appointment.';
+      }
+    },
+
+    async saveEmployee() {
+      if (!this.employeeForm.name) return;
+      // Resolve customer IDs → all their WhatsApp phone IDs
+      const phones = [];
+      (this.employeeForm.fixedCustomerIds || []).forEach(cid => {
+        const c = this.customers.find(c => c.id === cid);
+        if (c && Array.isArray(c.phones)) phones.push(...c.phones);
+      });
+      const { fixedCustomerIds, fallbackEmployeeIds, newFallbackId, ...formRest } = this.employeeForm;
+      const payload = { ...formRest, fixed_customer_phones: phones, fallback_employee_ids: (fallbackEmployeeIds || []).map(Number) };
+      if (this.editingEmployee) {
+        await this.api('PUT', `/api/employees/${this.editingEmployee.id}`, payload);
+      } else {
+        await this.api('POST', '/api/employees', payload);
+      }
+      this.employees = await this.api('GET', '/api/employees');
+      this.showEmployeeModal = false;
+      this.showToast(this.editingEmployee ? '✅ Barber updated!' : '✅ Barber added!');
+    },
+
+    async toggleEmployee(id) {
+      await this.api('POST', `/api/employees/${id}/toggle`);
+      this.employees = await this.api('GET', '/api/employees');
+    },
+
+    // ── Surinamese holidays ───────────────────────────────────────────────────
+    async syncHolidays() {
+      this.holidaySyncing = true;
+      const result = await this.api('POST', '/api/holidays/sync', { year: this.holidayYear });
+      this.holidaySyncing = false;
+      if (result.ok) {
+        this.showToast(`🇸🇷 ${result.added} holiday(s) added for ${this.holidayYear}`);
+        await this.loadBlocks();
+      }
+    },
+
+    // ── Gallery ───────────────────────────────────────────────────────────────
+    filteredPhotos() {
+      if (!this.photoTagFilter) return this.photos;
+      return this.photos.filter(p => (p.tags || []).includes(this.photoTagFilter));
+    },
+    allPhotoTags() {
+      const s = new Set();
+      this.photos.forEach(p => (p.tags || []).forEach(t => s.add(t)));
+      return [...s].sort();
+    },
+    async uploadPhotos(files) {
+      this.photoUploading = true;
+      for (const file of files) {
+        const base64 = await new Promise(res => {
+          const reader = new FileReader();
+          reader.onload = e => res(e.target.result);
+          reader.readAsDataURL(file);
+        });
+        await this.api('POST', '/api/photos', { base64, filename: file.name, tags: [], caption: '' });
+      }
+      this.photos         = await this.api('GET', '/api/photos');
+      this.photoUploading = false;
+      this.showToast(`✅ ${files.length} photo(s) uploaded`);
+    },
+    async savePhotoEdit() {
+      const tags = this.editingPhoto.tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+      await this.api('PUT', `/api/photos/${this.editingPhoto.id}`, { tags, caption: this.editingPhoto.caption });
+      this.photos       = await this.api('GET', '/api/photos');
+      this.editingPhoto = null;
+      this.showToast('✅ Photo updated');
+    },
+    async deletePhoto(id) {
+      await this.api('DELETE', `/api/photos/${id}`);
+      this.photos = await this.api('GET', '/api/photos');
+      this.showToast('🗑️ Photo deleted');
+    },
+
+    // ── Leave management ─────────────────────────────────────────────────────
+    async loadLeaves() {
+      this.leaves = await this.api('GET', `/api/leaves?month=${this.leaveMonth}`);
+    },
+    leaveMonthPrev() {
+      const [y, m] = this.leaveMonth.split('-').map(Number);
+      const d = new Date(y, m - 2, 1);
+      this.leaveMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      this.loadLeaves();
+    },
+    leaveMonthNext() {
+      const [y, m] = this.leaveMonth.split('-').map(Number);
+      const d = new Date(y, m, 1);
+      this.leaveMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      this.loadLeaves();
+    },
+    async addLeave() {
+      if (!this.leaveForm.employee_id || !this.leaveForm.start_date) return;
+      this.leaveSaving = true;
+      await this.api('POST', '/api/leaves', this.leaveForm);
+      this.leaveForm = { employee_id: '', start_date: '', end_date: '', reason: '' };
+      await this.loadLeaves();
+      this.leaveSaving = false;
+      this.showToast('🏖️ Leave added');
+    },
+    async deleteLeave(id) {
+      await this.api('DELETE', `/api/leaves/${id}`);
+      await this.loadLeaves();
+      this.showToast('🗑️ Leave removed');
+    },
+    // Build calendar days for the current leaveMonth
+    leaveCalendarDays() {
+      const [y, m] = this.leaveMonth.split('-').map(Number);
+      const first  = new Date(y, m - 1, 1);
+      const last   = new Date(y, m, 0);
+      const days   = [];
+      // Leading blank cells (Sun=0)
+      for (let i = 0; i < first.getDay(); i++) days.push(null);
+      for (let d = 1; d <= last.getDate(); d++) {
+        const dateStr = `${this.leaveMonth}-${String(d).padStart(2,'0')}`;
+        const onLeave = this.leaves.filter(l => l.start_date <= dateStr && l.end_date >= dateStr);
+        days.push({ day: d, dateStr, onLeave });
+      }
+      return days;
+    },
+    empColor(id) {
+      return this.employees.find(e => String(e.id) === String(id))?.color || '#94a3b8';
+    },
+    empName(id) {
+      return this.employees.find(e => String(e.id) === String(id))?.name || '?';
+    },
+
+    // ── Menu order ───────────────────────────────────────────────────────────
+    menuMove(idx, dir) {
+      const to = idx + dir;
+      if (to < 0 || to >= this.menuItems.length) return;
+      const arr = [...this.menuItems];
+      [arr[idx], arr[to]] = [arr[to], arr[idx]];
+      this.menuItems = arr;
+    },
+    async saveMenuOrder() {
+      const res = await this.api('PUT', '/api/menu', this.menuItems);
+      if (!this.authenticated) { this.showToast('❌ Session expired — please log in again.'); return; }
+      if (res.error) { this.showToast('❌ Failed to save: ' + res.error); return; }
+      this.menuSaved = true;
+      setTimeout(() => this.menuSaved = false, 2500);
+      this.showToast('✅ Menu order saved');
+    },
+
+    // ── Keywords ─────────────────────────────────────────────────────────────
+    keywordGroups() {
+      const defs = [
+        { action: 'booking',  icon: '📅', label: 'Booking' },
+        { action: 'gallery',  icon: '📸', label: 'Gallery / Styles' },
+        { action: 'training', icon: '🎓', label: 'Training' },
+        { action: 'hours',    icon: '🕐', label: 'Opening Hours' },
+        { action: 'location', icon: '📍', label: 'Location' },
+        { action: 'contact',  icon: '📞', label: 'Contact' },
+        { action: 'manage',   icon: '🔧', label: 'Manage Booking' },
+      ];
+      return defs.map(d => ({ ...d, items: this.keywords.filter(k => k.action === d.action) }));
+    },
+    async addKeyword() {
+      const kw = (this.newKeyword.keyword || '').trim().toLowerCase();
+      if (!kw) { this.showToast('⚠️ Enter a keyword first'); return; }
+      if (this.keywords.some(k => k.keyword === kw)) {
+        this.showToast('⚠️ That keyword already exists'); return;
+      }
+      await this.api('POST', '/api/keywords', { keyword: kw, action: this.newKeyword.action });
+      this.keywords = await this.api('GET', '/api/keywords');
+      this.newKeyword.keyword = '';
+      this.showToast('✅ Keyword added');
+    },
+    async toggleKeyword(k) {
+      await this.api('PUT', `/api/keywords/${k.id}`, { ...k, enabled: k.enabled ? 0 : 1 });
+      this.keywords = await this.api('GET', '/api/keywords');
+    },
+    async deleteKeyword(id) {
+      await this.api('DELETE', `/api/keywords/${id}`);
+      this.keywords = this.keywords.filter(k => k.id !== id);
+    },
+
+    // ── Customer management ───────────────────────────────────────────────────
+    filteredCustomers() {
+      if (this.customerFilter === 'noshows') return this.customers.filter(c => c.no_show_count > 0);
+      if (this.customerFilter === 'blocked')  return this.customers.filter(c => c.is_blocked);
+      return this.customers;
+    },
+    async saveCustomerName(c) {
+      const name = (this.editingCustomerName?.value || '').trim();
+      if (!name) return;
+      await this.api('PUT', `/api/customers/${c.id}`, { name });
+      this.customers = await this.api('GET', '/api/customers');
+      this.editingCustomerName = null;
+      this.showToast('✅ Name updated');
+    },
+    async deleteCustomer(id) {
+      if (!confirm('Delete this customer? This cannot be undone.')) return;
+      await this.api('DELETE', `/api/customers/${id}`);
+      this.customers = this.customers.filter(c => c.id !== id);
+      this.showToast('🗑️ Customer deleted');
+    },
+    async openCustomerStats(customer, view) {
+      const titles = { bookings: '📋 All Bookings', noshows: '⚠️ No-Shows', ratings: '⭐ Rated Appointments' };
+      this.customerStatsModal = { customer, title: titles[view], items: [], loading: true };
+      const all = await this.api('GET', `/api/customers/${customer.id}/appointments`);
+      let items = all;
+      if (view === 'noshows') items = all.filter(a => a.status === 'no-show');
+      if (view === 'ratings') items = all.filter(a => a.rating);
+      this.customerStatsModal = { ...this.customerStatsModal, items, loading: false };
+    },
+    async blockCustomer(id) {
+      const reason = this.blockReasonInputs[id] || '';
+      await this.api('POST', `/api/customers/${id}/block`, { reason });
+      this.customers = await this.api('GET', '/api/customers');
+      this.showToast('🚫 Customer blocked');
+    },
+    async unblockCustomer(id) {
+      await this.api('POST', `/api/customers/${id}/unblock`);
+      this.customers = await this.api('GET', '/api/customers');
+      this.showToast('✅ Customer unblocked');
+    },
+    async addPhone(id) {
+      const phone = (this.addPhoneInputs[id] || '').replace(/\D/g, '');
+      if (!phone) return;
+      await this.api('POST', `/api/customers/${id}/phones`, { phone });
+      this.addPhoneInputs[id] = '';
+      this.customers = await this.api('GET', '/api/customers');
+      this.showToast('📱 Phone number linked');
+    },
+    async removePhone(id, phone) {
+      await this.api('DELETE', `/api/customers/${id}/phones/${phone}`);
+      this.customers = await this.api('GET', '/api/customers');
+    },
+
+    // ── QR Scanner (barber scans customer's QR code) ──────────────────────────
+    startScanner() {
+      this.scanError     = '';
+      this.showScanModal = true;
+      // initScanner() is called via x-init on the modal div after DOM renders
+    },
+    async initScanner() {
+      try {
+        this._scanner = new Html5Qrcode('qr-reader');
+        await this._scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          async (decodedText) => {
+            // Got a code — stop scanner and process
+            try { await this._scanner.stop(); } catch (e) {}
+            this._scanner = null;
+            this.showScanModal = false;
+            await this.processCheckin(decodedText.trim().toUpperCase());
+          },
+          () => {} // ignore per-frame decode errors
+        );
+      } catch (err) {
+        this.scanError = 'Camera access denied — please allow camera permissions and try again.';
+      }
+    },
+    async stopScanner() {
+      if (this._scanner) {
+        try { await this._scanner.stop(); } catch (e) {}
+        this._scanner = null;
+      }
+      this.showScanModal = false;
+    },
+    async processCheckin(code) {
+      try {
+        const result = await this.api('POST', `/api/checkin/${code}`);
+        if (result.ok) {
+          this.showToast(`✅ ${result.customer_name} — ${result.service_emoji} ${result.service_name} — Checked in!`);
+        } else if (result.already) {
+          this.showToast(`ℹ️ ${result.customer_name} was already checked in`);
+        } else {
+          this.showToast(`⚠️ ${result.message || 'Check-in failed'}`);
+        }
+        // Refresh whichever page is active
+        if (this.page === 'appointments') await this.loadAppointments();
+        if (this.page === 'dashboard')    await this.loadDashboard();
+      } catch (e) {
+        this.showToast('❌ Code not found — make sure you scanned the correct QR');
+      }
+    },
+
+    async showQR(appt) {
+      this.qrAppt    = appt;
+      this.qrData    = null;
+      this.qrLoading = true;
+      this.showQRModal = true;
+      try {
+        this.qrData = await this.api('GET', `/api/appointments/${appt.id}/qr`);
+      } catch (e) {
+        this.showToast('❌ Failed to generate QR');
+        this.showQRModal = false;
+      }
+      this.qrLoading = false;
+    },
+
+    async releaseChat(chatId) {
+      await this.api('POST', `/api/chat-pauses/${encodeURIComponent(chatId)}/resume`);
+      this.pausedChats = await this.api('GET', '/api/chat-pauses');
+      this.showToast('🤖 Chat released back to bot');
+    },
+
+    async toggleAwayToday(id) {
+      await this.api('POST', `/api/employees/${id}/away`);
+      this.employees = await this.api('GET', '/api/employees');
+      const emp = this.employees.find(e => e.id === id);
+      this.showToast(emp?.isAwayToday ? '🚫 Marked as away today' : '✅ Back and available today');
+    },
+
+    // Employee schedule modal
+    async openScheduleModal(emp) {
+      this.scheduleEmployee = emp;
+      this.scheduleDate = new Date().toISOString().slice(0, 10);
+      this.scheduleDayAppts = [];
+      this.showScheduleModal = true;
+      await this.loadSchedule();
+    },
+
+    async loadSchedule() {
+      if (!this.scheduleEmployee || !this.scheduleDate) return;
+      this.scheduleLoading = true;
+      const appts = await this.api('GET', `/api/appointments?employee_id=${this.scheduleEmployee.id}&date=${this.scheduleDate}`);
+      this.scheduleDayAppts = Array.isArray(appts)
+        ? appts.filter(a => a.status !== 'cancelled').sort((a, b) => a.start_time.localeCompare(b.start_time))
+        : [];
+      this.scheduleLoading = false;
+    },
+
+    scheduleChangeDay(delta) {
+      const d = new Date(this.scheduleDate + 'T12:00:00');
+      d.setDate(d.getDate() + delta);
+      this.scheduleDate = d.toISOString().slice(0, 10);
+      this.loadSchedule();
+    },
+
+    // Service CRUD
+    openServiceModal(svc = null) {
+      this.editingService = svc;
+      this.serviceForm = svc
+        ? { name: svc.name, emoji: svc.emoji, description: svc.description, duration: svc.duration, price: svc.price }
+        : { name: '', emoji: '✂️', description: '', duration: 30, price: 0 };
+      this.showServiceModal = true;
+    },
+
+    async saveService() {
+      if (!this.serviceForm.name) return;
+      const body = { ...this.serviceForm, duration: +this.serviceForm.duration, price: +this.serviceForm.price };
+      if (this.editingService) {
+        await this.api('PUT', `/api/services/${this.editingService.id}`, body);
+      } else {
+        await this.api('POST', '/api/services', body);
+      }
+      this.services = await this.api('GET', '/api/services');
+      this.showServiceModal = false;
+      this.showToast(this.editingService ? '✅ Service updated!' : '✅ Service added!');
+    },
+
+    async toggleService(id) {
+      await this.api('POST', `/api/services/${id}/toggle`);
+      this.services = await this.api('GET', '/api/services');
+    },
+
+    // Appointment actions
+    async markStatus(id, status) {
+      if (!status) return;
+      await this.api('PUT', `/api/appointments/${id}`, { status });
+      await this.loadDashboard();
+      if (this.page === 'appointments') await this.loadAppointments();
+      this.showToast(`✅ Marked as ${status}`);
+    },
+
+    async syncAllCalendar() {
+      if (!confirm('Re-sync ALL upcoming appointments to the currently configured Google Calendar?\n\nThis will create new events on the new calendar. Old events on the previous calendar are not deleted.')) return;
+      this.calSyncing = true;
+      const res = await this.api('POST', '/api/appointments/sync-all-calendar');
+      this.calSyncing = false;
+      if (res.error) { this.showToast('❌ ' + res.error); return; }
+      this.showToast(`✅ Synced ${res.synced} appointment(s) to Google Calendar${res.failed ? ` (${res.failed} failed)` : ''}!`);
+      await this.loadAppointments();
+    },
+
+    async syncToCalendar(appt) {
+      this.showToast('📅 Syncing to Google Calendar…');
+      const res = await this.api('POST', `/api/appointments/${appt.id}/sync-calendar`);
+      if (res.ok) {
+        this.showToast('✅ Appointment added to Google Calendar!');
+        await this.loadAppointments();
+        // Open the newly created event directly
+        if (res.eventLink) window.open(res.eventLink, '_blank');
+      } else {
+        this.showToast('❌ ' + (res.error || 'Calendar sync failed'));
+      }
+    },
+
+    // Helpers
+    statusBadge(s) {
+      return { confirmed: 'badge-blue', completed: 'badge-green', cancelled: 'badge-red', 'no-show': 'badge-orange' }[s] || 'badge-gray';
+    },
+
+    fmtTime(dt) {
+      if (!dt) return '—';
+      return new Date(dt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Paramaribo' });
+    },
+
+    fmtDateTime(dt) {
+      if (!dt) return '—';
+      const d = new Date(dt);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Paramaribo' }) + ' ' + this.fmtTime(dt);
+    },
+
+    // ── Closed Dates / Blocks ─────────────────────────────────────────────────
+
+    async loadBlocks() {
+      // Show all blocks from today onwards (and last 7 days for reference)
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+      const all = await this.api('GET', '/api/blocks');
+      this.blocks = (all || []).filter(b => b.date >= cutoff.toISOString().slice(0,10));
+    },
+
+    async saveBlock() {
+      this.blockError = '';
+      if (!this.blockForm.date) { this.blockError = 'Please select a date.'; return; }
+      if (this.blockForm.all_day == '0' && (!this.blockForm.start_time || !this.blockForm.end_time)) {
+        this.blockError = 'Please set start and end time.'; return;
+      }
+      this.blockSaving = true;
+      const res = await this.api('POST', '/api/blocks', {
+        ...this.blockForm,
+        all_day: this.blockForm.all_day == '1',
+        employee_id: this.blockForm.employee_id || null,
+      });
+      this.blockSaving = false;
+      if (res.error) { this.blockError = res.error; return; }
+      this.blockForm = { date: '', employee_id: '', all_day: '1', start_time: '12:00', end_time: '13:00', reason: '' };
+      await this.loadBlocks();
+      this.showToast('🚫 Block added');
+    },
+
+    async deleteBlock(id) {
+      if (!confirm('Remove this block?')) return;
+      await this.api('DELETE', `/api/blocks/${id}`);
+      await this.loadBlocks();
+      this.showToast('✅ Block removed');
+    },
+
+    fmtBlockDate(dateStr) {
+      // dateStr is 'YYYY-MM-DD' — parse as local noon to avoid timezone shifting
+      return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    },
+
+    empName(id) {
+      const e = this.employees.find(e => String(e.id) === String(id));
+      return e ? e.name : '—';
+    },
+    empColor(id) {
+      const e = this.employees.find(e => String(e.id) === String(id));
+      return e ? e.color : '#94a3b8';
+    },
+
+    // ── Walk-in ────────────────────────────────────────────────────────────────
+
+    openWalkInModal() {
+      this.walkInForm = { service_id: '', employee_id: '', time: '', customer_name: '', customer_phone: '' };
+      this.walkInSlots = [];
+      this.walkInError = '';
+      this.walkInSaving = false;
+      this.showWalkInModal = true;
+    },
+
+    walkInEmployees() {
+      if (!this.walkInForm.service_id) return this.employees.filter(e => e.is_active);
+      return this.employees.filter(e =>
+        e.is_active && !(e.excluded_service_ids || []).includes(this.walkInForm.service_id)
+      );
+    },
+
+    async loadWalkInSlots() {
+      this.walkInForm.time = '';
+      this.walkInSlots = [];
+      const { service_id, employee_id } = this.walkInForm;
+      if (!service_id || !employee_id) return;
+
+      const svc = this.services.find(s => String(s.id) === String(service_id));
+      if (!svc) return;
+
+      this.walkInSlotsLoading = true;
+      const today = new Date().toISOString().slice(0, 10);
+      const raw = await this.api('GET', `/api/slots?employee_id=${employee_id}&date=${today}&duration=${svc.duration}`);
+      this.walkInSlotsLoading = false;
+
+      // Filter to future slots only (now + 5 min buffer)
+      const nowMins = new Date().getHours() * 60 + new Date().getMinutes() + 5;
+      this.walkInSlots = (raw || []).filter(t => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m >= nowMins;
+      });
+    },
+
+    async saveWalkIn() {
+      this.walkInError = '';
+      const f = this.walkInForm;
+      if (!f.service_id || !f.employee_id || !f.time || !f.customer_name) {
+        this.walkInError = 'Please fill in all required fields.'; return;
+      }
+      const svc = this.services.find(s => String(s.id) === String(f.service_id));
+      if (!svc) { this.walkInError = 'Service not found.'; return; }
+
+      const today = new Date().toISOString().slice(0, 10);
+      const [h, m] = f.time.split(':').map(Number);
+      const start = new Date(`${today}T${f.time}:00`);
+      const end   = new Date(start.getTime() + svc.duration * 60000);
+
+      this.walkInSaving = true;
+      const res = await this.api('POST', '/api/appointments', {
+        customer_name:    f.customer_name,
+        customer_phone:   f.customer_phone || 'walk-in',
+        service_id:       svc.id,
+        service_name:     svc.name,
+        service_emoji:    svc.emoji,
+        service_duration: svc.duration,
+        service_price:    svc.price,
+        employee_id:      f.employee_id,
+        start_time:       start.toISOString(),
+        end_time:         end.toISOString(),
+        notes:            'Walk-in',
+        status:           'confirmed',
+      });
+      this.walkInSaving = false;
+
+      if (res.error) { this.walkInError = res.error; return; }
+      this.showWalkInModal = false;
+      await this.loadDashboard();
+      this.showToast('✅ Walk-in registered!');
+    },
+
+    showToast(msg) {
+      this.toast = msg;
+      setTimeout(() => this.toast = '', 3000);
+    },
+
+    async api(method, url, body) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      try {
+        const r = await fetch(url, opts);
+        if (r.status === 401) { this.authenticated = false; return {}; }
+        return await r.json();
+      } catch (e) {
+        this.showToast('❌ Network error');
+        return {};
+      }
+    },
+  };
+}
+
+// Register service worker (enables PWA install)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
