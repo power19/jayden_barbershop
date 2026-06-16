@@ -78,10 +78,6 @@ async function startBot() {
 
   client.on('message', async (msg) => {
     if (msg.from.endsWith('@g.us') || msg.from === 'status@broadcast') return;
-    if (!msg.body?.trim()) {
-      await msg.reply('📝 Please send a *text message* to interact with the bot.\n\nType *menu* to get started! 💈');
-      return;
-    }
     console.log(`📨 [${new Date().toLocaleTimeString()}] ${msg.from}: ${msg.body}`);
     try {
       const reply = await handleMessage(msg);

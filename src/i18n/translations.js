@@ -140,7 +140,7 @@ const TRANSLATIONS = {
     returning_welcome: '👋 *Welcome back, {name}!*\n\nGreat to see you again. How can I help you today? 💈',
 
     // First-time customer welcome (shown instead of normal welcome header)
-    new_customer_welcome: '🌟 *Welcome to {shop_name}!*\n\nWe\'re so glad you found us! As a first-time visitor, feel free to explore our services or jump straight into booking your first appointment. We look forward to meeting you! 💈',
+    new_customer_welcome: '🌟 *Welcome to {shop_name}!*\n\nSelect a number. 💈',
 
     // Out-of-scope freeform message at main menu
     out_of_scope: '🤔 That\'s a bit outside what I can help with here.\n\nFor specific questions, you can reach our team directly at *{phone}*.\n\nHere\'s what I *can* do for you:',
@@ -283,7 +283,7 @@ const TRANSLATIONS = {
     returning_welcome: '👋 *Welkom terug, {name}!*\n\nFijn u weer te zien. Hoe kan ik u helpen vandaag? 💈',
 
     // First-time customer welcome
-    new_customer_welcome: '🌟 *Welkom bij {shop_name}!*\n\nWat fijn dat u ons gevonden heeft! Als nieuwe klant staan we klaar om u de beste ervaring te geven. Bekijk onze diensten of maak direct uw eerste afspraak! 💈',
+    new_customer_welcome: '🌟 *Welkom bij {shop_name}!*\n\nSelecteer een nummer. 💈',
 
     // Out-of-scope freeform message at main menu
     out_of_scope: '🤔 Dat valt buiten wat ik hier kan regelen.\n\nVoor specifieke vragen kunt u ons team bereiken via *{phone}*.\n\nHier is wat ik *wel* voor u kan doen:',
@@ -426,7 +426,7 @@ const TRANSLATIONS = {
     returning_welcome: '👋 *¡Bienvenido de vuelta, {name}!*\n\nQué gusto verte de nuevo. ¿En qué puedo ayudarte hoy? 💈',
 
     // First-time customer welcome
-    new_customer_welcome: '🌟 *¡Bienvenido a {shop_name}!*\n\n¡Nos alegra que nos hayas encontrado! Como nuevo cliente, estamos listos para brindarte la mejor experiencia. ¡Explora nuestros servicios o reserva tu primera cita! 💈',
+    new_customer_welcome: '🌟 *¡Bienvenido a {shop_name}!*\n\nSeleccione un número. 💈',
 
     // Out-of-scope freeform message at main menu
     out_of_scope: '🤔 Eso está un poco fuera de lo que puedo ayudarte aquí.\n\nPara preguntas específicas, puedes contactar a nuestro equipo en *{phone}*.\n\nAquí está lo que *sí* puedo hacer:',
@@ -569,7 +569,7 @@ const TRANSLATIONS = {
     returning_welcome: '👋 *Bon retour, {name} !*\n\nRavi de vous revoir. Comment puis-je vous aider aujourd\'hui ? 💈',
 
     // First-time customer welcome
-    new_customer_welcome: '🌟 *Bienvenue chez {shop_name} !*\n\nNous sommes ravis que vous nous ayez trouvés ! En tant que nouveau client, nous sommes prêts à vous offrir la meilleure expérience. Parcourez nos services ou réservez votre premier rendez-vous ! 💈',
+    new_customer_welcome: '🌟 *Bienvenue chez {shop_name} !*\n\nSélectionnez un numéro. 💈',
 
     // Out-of-scope freeform message at main menu
     out_of_scope: '🤔 Cela dépasse un peu ce que je peux faire ici.\n\nPour des questions spécifiques, contactez notre équipe au *{phone}*.\n\nVoici ce que je peux *faire* pour vous :',
@@ -704,7 +704,7 @@ const TRANSLATIONS = {
 
     returning_welcome: '👋 *Bem-vindo de volta, {name}!*\n\nQue bom ver você novamente. Como posso ajudá-lo hoje? 💈',
 
-    new_customer_welcome: '🌟 *Bem-vindo ao {shop_name}!*\n\nQue bom que nos encontrou! Como novo cliente, estamos prontos para oferecer a melhor experiência. Explore nossos serviços ou agende seu primeiro horário! 💈',
+    new_customer_welcome: '🌟 *Bem-vindo ao {shop_name}!*\n\nSelecione um número. 💈',
 
     out_of_scope: '🤔 Isso está um pouco além do que posso fazer aqui.\n\nPara perguntas específicas, contate nossa equipe no *{phone}*.\n\nAqui está o que posso *fazer* por você:',
 

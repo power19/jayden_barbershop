@@ -100,11 +100,6 @@ client.on('message_create', async (msg) => {
 client.on('message', async (msg) => {
   if (msg.from.endsWith('@g.us') || msg.from === 'status@broadcast') return;
 
-  if (!msg.body?.trim()) {
-    await client.sendMessage(msg.from, '📝 Please send a *text message* to interact with the bot.\n\nType *menu* to get started! 💈');
-    return;
-  }
-
   console.log(`📨 [${new Date().toLocaleTimeString()}] ${msg.from}: ${msg.body}`);
 
   try {
