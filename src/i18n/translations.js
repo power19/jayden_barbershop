@@ -19,7 +19,7 @@ const TRANSLATIONS = {
     menu_manage:       'Manage My Appointment',
 
     // Main menu
-    welcome:           '💈 *Welcome to {shop_name}!*\n\nHow can I help you today?',
+    welcome:           '*Welcome to {shop_name}!*\n\nChoose a number to get started. 👇',
     menu_book:         '📅 Book an Appointment',
     menu_services:     '💈 Our Services & Prices',
     menu_hours:        '⏰ Business Hours',
@@ -140,7 +140,7 @@ const TRANSLATIONS = {
     returning_welcome: '👋 *Welcome back, {name}!*\n\nGreat to see you again. How can I help you today? 💈',
 
     // First-time customer welcome (shown instead of normal welcome header)
-    new_customer_welcome: '🌟 *Welcome to {shop_name}!*\n\nSelect a number. 💈',
+    new_customer_welcome: '*Welcome to {shop_name}!*\n\nChoose a number to get started. 👇',
 
     // Out-of-scope freeform message at main menu
     out_of_scope: '🤔 That\'s a bit outside what I can help with here.\n\nFor specific questions, you can reach our team directly at *{phone}*.\n\nHere\'s what I *can* do for you:',
@@ -172,7 +172,7 @@ const TRANSLATIONS = {
     menu_language:     'Taal Wijzigen',
     menu_manage:       'Mijn Afspraak Beheren',
 
-    welcome:           '💈 *Welkom bij {shop_name}!*\n\nHoe kan ik u helpen vandaag?',
+    welcome:           '*Welkom bij {shop_name}!*\n\nKies een nummer om te beginnen. 👇',
     menu_book:         '📅 Afspraak Maken',
     menu_services:     '💈 Diensten & Prijzen',
     menu_hours:        '⏰ Openingstijden',
@@ -283,7 +283,7 @@ const TRANSLATIONS = {
     returning_welcome: '👋 *Welkom terug, {name}!*\n\nFijn u weer te zien. Hoe kan ik u helpen vandaag? 💈',
 
     // First-time customer welcome
-    new_customer_welcome: '🌟 *Welkom bij {shop_name}!*\n\nSelecteer een nummer. 💈',
+    new_customer_welcome: '*Welkom bij {shop_name}!*\n\nKies een nummer om te beginnen. 👇',
 
     // Out-of-scope freeform message at main menu
     out_of_scope: '🤔 Dat valt buiten wat ik hier kan regelen.\n\nVoor specifieke vragen kunt u ons team bereiken via *{phone}*.\n\nHier is wat ik *wel* voor u kan doen:',
@@ -315,7 +315,7 @@ const TRANSLATIONS = {
     menu_language:     'Cambiar Idioma',
     menu_manage:       'Gestionar Mi Cita',
 
-    welcome:           '💈 *¡Bienvenido a {shop_name}!*\n\n¿Cómo puedo ayudarte hoy?',
+    welcome:           '*¡Bienvenido a {shop_name}!*\n\nElige un número para empezar. 👇',
     menu_book:         '📅 Reservar Cita',
     menu_services:     '💈 Servicios & Precios',
     menu_hours:        '⏰ Horario de Atención',
@@ -426,7 +426,7 @@ const TRANSLATIONS = {
     returning_welcome: '👋 *¡Bienvenido de vuelta, {name}!*\n\nQué gusto verte de nuevo. ¿En qué puedo ayudarte hoy? 💈',
 
     // First-time customer welcome
-    new_customer_welcome: '🌟 *¡Bienvenido a {shop_name}!*\n\nSeleccione un número. 💈',
+    new_customer_welcome: '*¡Bienvenido a {shop_name}!*\n\nElige un número para empezar. 👇',
 
     // Out-of-scope freeform message at main menu
     out_of_scope: '🤔 Eso está un poco fuera de lo que puedo ayudarte aquí.\n\nPara preguntas específicas, puedes contactar a nuestro equipo en *{phone}*.\n\nAquí está lo que *sí* puedo hacer:',
@@ -458,7 +458,7 @@ const TRANSLATIONS = {
     menu_language:     'Changer de Langue',
     menu_manage:       'Gérer Mon Rendez-vous',
 
-    welcome:           '💈 *Bienvenue chez {shop_name} !*\n\nComment puis-je vous aider aujourd\'hui ?',
+    welcome:           '*Bienvenue chez {shop_name} !*\n\nChoisissez un numéro pour commencer. 👇',
     menu_book:         '📅 Prendre Rendez-vous',
     menu_services:     '💈 Nos Services & Tarifs',
     menu_hours:        '⏰ Heures d\'Ouverture',
@@ -569,7 +569,7 @@ const TRANSLATIONS = {
     returning_welcome: '👋 *Bon retour, {name} !*\n\nRavi de vous revoir. Comment puis-je vous aider aujourd\'hui ? 💈',
 
     // First-time customer welcome
-    new_customer_welcome: '🌟 *Bienvenue chez {shop_name} !*\n\nSélectionnez un numéro. 💈',
+    new_customer_welcome: '*Bienvenue chez {shop_name} !*\n\nChoisissez un numéro pour commencer. 👇',
 
     // Out-of-scope freeform message at main menu
     out_of_scope: '🤔 Cela dépasse un peu ce que je peux faire ici.\n\nPour des questions spécifiques, contactez notre équipe au *{phone}*.\n\nVoici ce que je peux *faire* pour vous :',
@@ -601,7 +601,7 @@ const TRANSLATIONS = {
     menu_language:     'Mudar Idioma',
     menu_manage:       'Gerenciar Meu Agendamento',
 
-    welcome:           '💈 *Bem-vindo ao {shop_name}!*\n\nComo posso ajudá-lo hoje?',
+    welcome:           '*Bem-vindo ao {shop_name}!*\n\nEscolha um número para começar. 👇',
     menu_book:         '📅 Agendar Horário',
     menu_services:     '💈 Nossos Serviços & Preços',
     menu_hours:        '⏰ Horário de Funcionamento',
@@ -704,7 +704,7 @@ const TRANSLATIONS = {
 
     returning_welcome: '👋 *Bem-vindo de volta, {name}!*\n\nQue bom ver você novamente. Como posso ajudá-lo hoje? 💈',
 
-    new_customer_welcome: '🌟 *Bem-vindo ao {shop_name}!*\n\nSelecione um número. 💈',
+    new_customer_welcome: '*Bem-vindo ao {shop_name}!*\n\nEscolha um número para começar. 👇',
 
     out_of_scope: '🤔 Isso está um pouco além do que posso fazer aqui.\n\nPara perguntas específicas, contate nossa equipe no *{phone}*.\n\nAqui está o que posso *fazer* por você:',
 
