@@ -24,6 +24,9 @@ npm-debug.log*
 
 # Database (live data — never commit)
 data/*.json
+data/*.json.bak
+data/*.json.tmp
+data/backups/
 
 # OS files
 .DS_Store

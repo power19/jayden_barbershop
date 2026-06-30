@@ -38,6 +38,20 @@ function hexToCalColorId(hex) {
   return match ? match.id : '7';
 }
 
+// Colored-circle emoji per Google colorId. Google's mobile app shows every event
+// on a *shared* calendar in one flat color, ignoring per-event colorId — so we also
+// stamp a matching colored dot into the event title. The dot is plain text, so it
+// survives in every client and lets viewers tell barbers apart at a glance.
+const CIRCLE_BY_COLOR_ID = {
+  '1': '🔵', '2': '🟢', '3': '🟣', '4': '🔴', '5': '🟡', '6': '🟠',
+  '7': '🔵', '8': '⚫', '9': '🔵', '10': '🟢', '11': '🔴',
+};
+
+/** Returns a colored-circle emoji for a barber's hex color (matches the calendar colorId). */
+function hexToCircleEmoji(hex) {
+  return CIRCLE_BY_COLOR_ID[hexToCalColorId(hex)] || '🔵';
+}
+
 
 let _auth = null;
 
@@ -75,11 +89,12 @@ async function createAppointment({ service, startTime, endTime, customerName, bo
   try {
     const cal = await _getCalendar();
 
+    const dot = employeeName ? `${hexToCircleEmoji(employeeColor)} ` : '';
     const titleParts = [`💈 ${service.name}`, customerName];
     if (employeeName) titleParts.splice(1, 0, `(${employeeName})`);
 
     const event = {
-      summary: titleParts.join(' — '),
+      summary: dot + titleParts.join(' — '),
       description: [
         `📋 Service : ${service.name}`,
         employeeName ? `✂️  Barber  : ${employeeName}` : '',
@@ -172,10 +187,11 @@ async function updateEvent({ calendarId, eventId, startTime, endTime, service, c
   const currency = process.env.CURRENCY || 'SRD';
   try {
     const cal = await _getCalendar();
+    const dot = employeeName ? `${hexToCircleEmoji(employeeColor)} ` : '';
     const titleParts = [`💈 ${service.name}`, customerName];
     if (employeeName) titleParts.splice(1, 0, `(${employeeName})`);
     const patch = {
-      summary: titleParts.join(' — '),
+      summary: dot + titleParts.join(' — '),
       description: [
         `📋 Service : ${service.name}`,
         employeeName ? `✂️  Barber  : ${employeeName}` : '',

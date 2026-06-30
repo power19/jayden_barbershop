@@ -11,6 +11,7 @@
 const QRCode                      = require('qrcode');
 const { createBot }               = require('./bot');
 const { handleMessage }           = require('./handlers/conversationHandler');
+const { enqueue }                 = require('./utils/chatQueue');
 const { update: waUpdate, state: waState } = require('./whatsapp-state');
 const { setClient, getClient }    = require('./whatsapp-client');
 const { startScheduler }          = require('./reminder-scheduler');
@@ -76,9 +77,13 @@ async function startBot() {
     startScheduler();
   });
 
-  client.on('message', async (msg) => {
+  client.on('message', (msg) => {
     if (msg.from.endsWith('@g.us') || msg.from === 'status@broadcast') return;
     console.log(`📨 [${new Date().toLocaleTimeString()}] ${msg.from}: ${msg.body}`);
+
+    // Serialize handling per chat so a customer's rapid-fire messages are processed
+    // one at a time, in order — fixes new customers getting the welcome 2–3× in a row.
+    enqueue(msg.from, async () => {
     try {
       const reply = await handleMessage(msg);
       if (!reply) return;
@@ -92,7 +97,8 @@ async function startBot() {
 
         // ICS calendar attachment — send separately so a failure here
         // never replaces the booking confirmation the user already received.
-        if (reply.ics) {
+        // Gated by the ics_enabled setting (absent/unset = on).
+        if (reply.ics && q.getSetting('ics_enabled') !== '0') {
           try {
             const { MessageMedia } = require('whatsapp-web.js');
             const media = new MessageMedia(
@@ -113,6 +119,7 @@ async function startBot() {
       console.error('❌ Error handling message:', err);
       await msg.reply(`😔 Something went wrong. Please contact us at ${q.getSetting('shop_phone') || 'the shop'}.`);
     }
+    });
   });
 
   client.on('disconnected', (reason) => {

@@ -53,7 +53,6 @@ function seedIfEmpty() {
   if (db.botMessages.count() === 0) {
     [
       { key: 'welcome_header',       label: 'Welcome Message',           description: 'First message customers see. Use {shop_name} as a placeholder.',                     value: "💈 *Welcome to {shop_name}!*\n\nHow can I help you today?" },
-      { key: 'confirmed_footer',     label: 'Booking Confirmed — Footer', description: 'Text added after the booking summary when a customer confirms.',                     value: 'We look forward to seeing you! ✂️\n\n_To cancel or reschedule, contact us directly._' },
       { key: 'no_slots_message',     label: 'No Available Slots',        description: 'Shown when a chosen date has no open time slots.',                                    value: '😔 No open slots on that date. Please pick another day.' },
       { key: 'bot_paused_message',   label: 'Bot Paused Message',        description: 'Shown to all customers when the bot is paused from the dashboard.',                  value: '😊 We are currently unavailable via WhatsApp. Please call us at {shop_phone}.' },
       { key: 'select_employee_prompt', label: 'Select Barber Prompt',    description: 'Header shown before the list of available barbers.',                                  value: '💈 *Choose your barber:*' },
@@ -71,6 +70,15 @@ function seedIfEmpty() {
   newMessages.forEach(m => {
     if (!db.botMessages.findOne(r => r.key === m.key)) db.botMessages.insert(m);
   });
+
+  // Retired: the booking confirmation footer is now auto-translated per language
+  // (booked_footer_default + booked_cancel_note). Drop the orphaned editable
+  // message so it no longer shows as a dead field in the dashboard.
+  db.botMessages.remove(m => m.key === 'confirmed_footer');
+
+  // Retired: the privacy policy is now served per-language from config (not a
+  // single editable message). Drop the old Dutch-only row so it doesn't linger.
+  db.botMessages.remove(m => m.key === 'privacy_policy');
 
   // Settings
   const settingDefaults = {
@@ -96,6 +104,7 @@ function seedIfEmpty() {
     reminder_hours:       '24',
     survey_enabled:       '0',
     survey_delay_minutes: '30',
+    ics_enabled:          '1',   // 1 = attach .ics calendar invite to booking confirmations
     new_customer_employee_id: '', // barber ID who handles all new customers
     training_enabled:         '0',    // kept for back-compat; menu_order is now the source of truth
     menu_order: JSON.stringify([
@@ -108,6 +117,7 @@ function seedIfEmpty() {
       { action: 'manage',   enabled: true  },
       { action: 'training', enabled: false },
       { action: 'feedback', enabled: true  },
+      { action: 'privacy',  enabled: true  },
     ]),
     training_video_filename:  '',     // filename of uploaded training video in data/uploads/
     barber_scan_pin:          '1234', // PIN for the barber-only QR scanner page
@@ -120,7 +130,8 @@ function seedIfEmpty() {
     cs_phone_1:           '',
     cs_phone_2:           '',
     complaint_phone:      '',
-    fixed_customer_limit: '10',
+    fixed_customer_limit:      '10',
+    session_timeout_minutes:   '30',
     warning_1_threshold:  '1',
     warning_1_message:    '⚠️ Hi {name}, we noticed you missed your appointment. Please remember to cancel in advance if you can\'t make it. We look forward to seeing you soon! 💈',
     warning_2_threshold:  '2',

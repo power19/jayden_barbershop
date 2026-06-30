@@ -23,8 +23,9 @@ const {
   cancelEvent:       calendarCancel,
   updateEvent:       calendarUpdate,
 } = require('../services/googleCalendar');
-const { t, buildLanguageMenu, LANG_MAP }    = require('../i18n/translations');
+const { t, buildLanguageMenu, matchLanguage } = require('../i18n/translations');
 const { generateIcs }                       = require('../utils/icsGenerator');
+const PRIVACY_POLICY                        = require('../config/privacyPolicy');
 
 const NUM       = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
 const num       = i => NUM[i] || `*${i + 1}.*`;
@@ -69,6 +70,9 @@ const isBack   = (tx, lang) => {
 const isYes = (tx, lang) => (t(lang, 'yes_words') || []).includes(tx.trim().toLowerCase());
 const isNo  = (tx, lang) => (t(lang, 'no_words')  || []).includes(tx.trim().toLowerCase());
 
+/** Unique id linking all appointments created in a single group/family booking. */
+const newGroupId = () => `G${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 async function handleMessage(message) {
@@ -96,6 +100,14 @@ async function handleMessage(message) {
   const session = sessions.getSession(userId);
   const lang    = session.language || null;
 
+  // Parked after media (training video / gallery photos): the next message of
+  // ANY kind just re-displays the main menu. It is never treated as an option
+  // choice — options are only selected when a menu is actually on screen.
+  if (session.state === 'AWAITING_MENU_RETURN' && lang) {
+    sessions.updateSession(userId, { state: 'MAIN_MENU' });
+    return buildMainMenu(lang);
+  }
+
   // Menu shortcut — preserves language
   if (isMenu(text)) {
     sessions.resetSession(userId);
@@ -103,9 +115,8 @@ async function handleMessage(message) {
       sessions.updateSession(userId, { state: 'MAIN_MENU', language: lang });
       return buildMainMenu(lang);
     }
-    // No language yet — go to language selection
-    sessions.updateSession(userId, { state: 'SELECTING_LANGUAGE' });
-    return buildLanguageMenu();
+    // No language yet — default to Dutch, straight to the main menu (no prompt)
+    return defaultEntry(userId, sessions.getSession(userId), null);
   }
 
   // Cancel shortcut
@@ -124,8 +135,9 @@ async function handleMessage(message) {
   // Keyword shortcut — only at top-level (not mid-booking/survey/gallery flow)
   const MID_FLOW_STATES = new Set([
     'SELECTING_SERVICE', 'SELECTING_GROUP_SIZE', 'SELECTING_EMPLOYEE',
+    'COLLECTING_PERSON_NAME', 'COLLECTING_PERSON_SERVICE',
     'SELECTING_DATE', 'SELECTING_TIME', 'ENTERING_NAME', 'CONFIRMING_BOOKING',
-    'MANAGING_BOOKING', 'MANAGING_OPTIONS', 'CONFIRMING_CANCEL',
+    'MANAGING_SELECT', 'MANAGING_BOOKING', 'MANAGING_OPTIONS', 'CONFIRMING_CANCEL', 'CONFIRMING_CANCEL_SCOPE',
     'RESCHEDULING_DATE', 'RESCHEDULING_TIME', 'CONFIRMING_RESCHEDULE',
     'SURVEY_RATING', 'BROWSING_GALLERY',
   ]);
@@ -167,6 +179,7 @@ async function handleMessage(message) {
 
   switch (session.state) {
     case 'IDLE':
+      return defaultEntry(userId, session, isMyContact);
     case 'SELECTING_LANGUAGE':
       return onSelectLanguage(userId, text, session, isMyContact);
     case 'MAIN_MENU':
@@ -177,6 +190,10 @@ async function handleMessage(message) {
       return onGroupSize(userId, text, session);
     case 'SELECTING_EMPLOYEE':
       return onEmployee(userId, text, session);
+    case 'COLLECTING_PERSON_NAME':
+      return onCollectPersonName(userId, text, session);
+    case 'COLLECTING_PERSON_SERVICE':
+      return onCollectPersonService(userId, text, session);
     case 'SELECTING_DATE':
       return onDate(userId, text, session);
     case 'SELECTING_TIME':
@@ -187,12 +204,14 @@ async function handleMessage(message) {
       return onConfirm(userId, text, session);
     case 'RATING_APPOINTMENT':
       return onRating(userId, text, session);
-    case 'BROWSING_GALLERY':
-      return onGallery(userId, text, session);
+    case 'MANAGING_SELECT':
+      return onManageSelect(userId, text, session);
     case 'MANAGING_BOOKING':
       return onManageBooking(userId, text, session);
     case 'MANAGING_OPTIONS':
       return onManageOptions(userId, text, session);
+    case 'CONFIRMING_CANCEL_SCOPE':
+      return onConfirmCancelScope(userId, text, session);
     case 'CONFIRMING_CANCEL':
       return onConfirmCancel(userId, text, session);
     case 'RESCHEDULING_DATE':
@@ -207,16 +226,42 @@ async function handleMessage(message) {
       return await onFeedbackSuggestion(userId, text, session);
     default:
       sessions.resetSession(userId);
-      sessions.updateSession(userId, { state: 'SELECTING_LANGUAGE' });
-      return buildLanguageMenu();
+      return defaultEntry(userId, sessions.getSession(userId), null);
   }
 }
 
 // ── State handlers ────────────────────────────────────────────────────────────
 
+// Default language for new chats — the bot no longer asks up front; it starts in
+// Dutch and customers switch via the "Taal Wijzigen" menu option.
+const DEFAULT_LANG = 'nl';
+
+/**
+ * First-contact entry: skip the language prompt, start in the default language and
+ * go straight to the main menu (with a new- or returning-customer welcome).
+ */
+function defaultEntry(userId, session, isMyContact = null) {
+  const lang    = DEFAULT_LANG;
+  const phone   = userId.replace(/@\S+$/, '');
+  const profile = q.getCustomerByPhone(phone);
+  const isNew   = profile ? false
+    : (isMyContact === null ? q.isNewCustomer(phone) : !isMyContact);
+
+  sessions.updateSession(userId, { state: 'MAIN_MENU', language: lang, isNewCustomer: isNew });
+
+  if (isNew) {
+    const shop       = q.getSetting('shop_name') || "Jayden's Barbershop";
+    const welcomeMsg = q.getBotMessage('new_customer_welcome') || t(lang, 'new_customer_welcome');
+    return buildMainMenu(lang, welcomeMsg.replace('{shop_name}', shop));
+  }
+  if (profile?.name) {
+    return buildMainMenu(lang, t(lang, 'returning_welcome', { name: profile.name }));
+  }
+  return buildMainMenu(lang);
+}
+
 function onSelectLanguage(userId, text, session, isMyContact = null) {
-  const choice = text.trim();
-  const lang   = LANG_MAP[choice];
+  const lang = matchLanguage(text);
   if (!lang) {
     return buildLanguageMenu();
   }
@@ -272,23 +317,44 @@ async function onMainMenu(userId, text, session) {
 
 async function dispatchKeyword(action, userId, lang, session) {
   switch (action) {
-    case 'booking':
-      sessions.updateSession(userId, { state: 'SELECTING_SERVICE', servicePage: 0 });
-      return buildServiceMenu(lang, true, 0);
-    case 'gallery': {
-      const tags = q.getPhotoTags();
-      if (tags.length === 0) return `${t(lang, 'gallery_no_tags')}\n\n${buildMainMenu(lang)}`;
-      sessions.updateSession(userId, { state: 'BROWSING_GALLERY', galleryTags: tags });
-      return buildGalleryMenu(lang, tags);
+    case 'booking': {
+      const employees = q.getActiveEmployees();
+      // Fixed customers always book for 1 person — skip group size, go straight to service
+      const custPhoneB = userId.replace(/@\S+$/, '');
+      const fixedBarberB = q.getBarberForPhone(custPhoneB);
+      if (fixedBarberB) {
+        sessions.updateSession(userId, { state: 'SELECTING_SERVICE', employees, servicePage: 0, groupSize: 1, isFixedCustomer: true });
+        return buildServiceMenu(lang, true, 0);
+      }
+      sessions.updateSession(userId, { state: 'SELECTING_GROUP_SIZE', employees, servicePage: 0 });
+      return buildGroupSizeMenu(lang, null, employees.length);
     }
+    case 'gallery':
+      // No category picker — post the whole gallery straight away.
+      return await sendGallery(userId, lang);
     case 'training':
       return await onTraining(userId, lang);
     case 'hours':    return buildHours(lang);
     case 'location': return buildLocation(lang);
     case 'contact':  return buildContact(lang);
-    case 'manage':
+    case 'privacy':  return buildPrivacy(lang);
+    case 'manage': {
+      // Show the customer's own appointments — no code needed, we know their number.
+      const phone = userId.replace(/@\S+$/, '');
+      const appts = q.getUpcomingAppointmentsByPhone(phone);
+      if (appts.length === 1) {
+        // Just one — skip the list, go straight to its options.
+        sessions.updateSession(userId, { state: 'MANAGING_OPTIONS', managedAppointment: appts[0] });
+        return buildManageOptions(lang, appts[0]);
+      }
+      if (appts.length > 1) {
+        sessions.updateSession(userId, { state: 'MANAGING_SELECT', manageList: appts });
+        return buildManageList(lang, appts);
+      }
+      // None under this number — fall back to entering a code (e.g. booked elsewhere).
       sessions.updateSession(userId, { state: 'MANAGING_BOOKING' });
-      return t(lang, 'manage_prompt');
+      return t(lang, 'manage_no_appts');
+    }
     case 'language':
       sessions.resetSession(userId);
       sessions.updateSession(userId, { state: 'SELECTING_LANGUAGE' });
@@ -306,8 +372,14 @@ async function onService(userId, text, session) {
   const page = session.servicePage || 0;
 
   if (isBack(text, lang)) {
-    sessions.updateSession(userId, { state: 'MAIN_MENU', servicePage: 0 });
-    return `↩️ _${t(lang, 'back_to_main_menu')}_\n\n${buildMainMenu(lang)}`;
+    // Fixed customers have no group-size step — go back to main menu
+    if (session.isFixedCustomer) {
+      sessions.updateSession(userId, { state: 'MAIN_MENU', servicePage: 0 });
+      return `↩️ _${t(lang, 'back_to_main_menu')}_\n\n${buildMainMenu(lang)}`;
+    }
+    // Normal single-person: group size was asked first
+    sessions.updateSession(userId, { state: 'SELECTING_GROUP_SIZE', servicePage: 0 });
+    return buildGroupSizeMenu(lang, null, session.employees?.length || 1);
   }
 
   const services = q.getActiveServices();
@@ -344,13 +416,13 @@ async function onService(userId, text, session) {
     let chosenEmployees = [fixedBarber];
 
     // If fixed barber has no available dates, try fallbacks in priority order
-    const availCheck = q.getAvailableDates(chosenEmployees);
+    const availCheck = q.getAvailableDates(chosenEmployees, lang);
     if (availCheck.length === 0) {
       const fallbackIds = Array.isArray(fixedBarber.fallback_employee_ids) ? fixedBarber.fallback_employee_ids : [];
       for (const fbId of fallbackIds) {
         const fallback = q.getEmployee(fbId);
         if (fallback && employees.some(e => e.id === fallback.id)) {
-          const fbDates = q.getAvailableDates([fallback]);
+          const fbDates = q.getAvailableDates([fallback], lang);
           if (fbDates.length > 0) {
             chosenEmployees = [fallback];
             break;
@@ -360,7 +432,7 @@ async function onService(userId, text, session) {
     }
 
     // Skip group size — fixed customers always book for 1
-    const dates = q.getAvailableDates(chosenEmployees);
+    const dates = q.getAvailableDates(chosenEmployees, lang);
     sessions.updateSession(userId, {
       state: 'SELECTING_DATE',
       selectedService: service,
@@ -383,41 +455,150 @@ async function onService(userId, text, session) {
     }
   }
 
-  // Ask how many people — barber selection skipped, fair auto-assign at confirmation
+  // Group size was already chosen (single-person path) — go straight to date selection
+  const dates = q.getAvailableDates(employees, lang);
   sessions.updateSession(userId, {
-    state: 'SELECTING_GROUP_SIZE',
+    state: 'SELECTING_DATE',
     selectedService: service,
     employees,
+    isAnyEmployee: true,
+    availableDates: dates,
+    datePage: 0,
   });
-  return buildGroupSizeMenu(lang, service, employees.length);
+  return buildDateMenu(lang, dates, service, 0);
 }
 
 async function onGroupSize(userId, text, session) {
   const lang = session.language;
   if (isBack(text, lang)) {
-    sessions.updateSession(userId, { state: 'SELECTING_SERVICE' });
-    return buildServiceMenu(lang, true, session.servicePage || 0);
+    // Group size is now the first booking step — back goes to main menu
+    sessions.updateSession(userId, { state: 'MAIN_MENU' });
+    return `↩️ _${t(lang, 'back_to_main_menu')}_\n\n${buildMainMenu(lang)}`;
   }
 
-  const { employees, selectedService } = session;
-  // Allow up to 2× the barber count (overflow), hard-capped at 6
+  const { employees } = session;
   const maxAllowed = Math.min(employees.length * 2, 4);
   const n = parseInt(text, 10);
 
   if (isNaN(n) || n < 1 || n > maxAllowed) {
-    return `${t(lang, 'group_invalid', { max: maxAllowed })}\n\n${buildGroupSizeMenu(lang, selectedService, employees.length)}`;
+    return `${t(lang, 'group_invalid', { max: maxAllowed })}\n\n${buildGroupSizeMenu(lang, null, employees.length)}`;
   }
 
+  if (n === 1) {
+    // Single person — proceed to service selection
+    sessions.updateSession(userId, { state: 'SELECTING_SERVICE', groupSize: 1, servicePage: 0 });
+    return buildServiceMenu(lang, true, 0);
+  }
+
+  // Multiple people — collect name + service per person
   const groupSize = n;
-  const dates = q.getAvailableDates(employees);
+  const customerPhone = userId.replace(/@\S+$/, '');
+  const profile = q.getCustomerByPhone(customerPhone);
+
+  // Always ask for all names — could be a parent booking for kids
+  sessions.updateSession(userId, {
+    state: 'COLLECTING_PERSON_NAME',
+    groupSize,
+    persons: [],
+    currentPersonIdx: 0,
+  });
+  return t(lang, 'collect_person_name', { n: 1, total: groupSize });
+}
+
+function onCollectPersonName(userId, text, session) {
+  const lang = session.language;
+  const { groupSize, persons, currentPersonIdx } = session;
+
+  if (isBack(text, lang)) {
+    if (currentPersonIdx > 0) {
+      // Go back to previous person's service selection
+      const prevIdx = currentPersonIdx - 1;
+      sessions.updateSession(userId, {
+        state: 'COLLECTING_PERSON_SERVICE',
+        currentPersonIdx: prevIdx,
+        servicePage: 0,
+      });
+      const prevPerson = persons[prevIdx];
+      return buildCollectPersonServiceMenu(lang, prevPerson.name, prevIdx + 1, groupSize);
+    }
+    // Back to group size
+    sessions.updateSession(userId, { state: 'SELECTING_GROUP_SIZE' });
+    return buildGroupSizeMenu(lang, null, session.employees?.length || 1);
+  }
+
+  const name = text.trim();
+  if (name.length < 2) return t(lang, 'name_too_short');
+
+  const updatedPersons = [...persons];
+  updatedPersons[currentPersonIdx] = { name, service: null };
+  sessions.updateSession(userId, {
+    state: 'COLLECTING_PERSON_SERVICE',
+    persons: updatedPersons,
+    servicePage: 0,
+  });
+  return buildCollectPersonServiceMenu(lang, name, currentPersonIdx + 1, groupSize);
+}
+
+async function onCollectPersonService(userId, text, session) {
+  const lang = session.language;
+  const { groupSize, persons, currentPersonIdx } = session;
+  const page = session.servicePage || 0;
+  const currentName = persons[currentPersonIdx]?.name || `Person ${currentPersonIdx + 1}`;
+
+  if (isBack(text, lang)) {
+    // Go back to name entry for this person
+    sessions.updateSession(userId, { state: 'COLLECTING_PERSON_NAME' });
+    return t(lang, 'collect_person_name', { n: currentPersonIdx + 1, total: groupSize });
+  }
+
+  const services = q.getActiveServices();
+
+  if (/^(more|meer|más|plus|next|volgende|suivant)$/i.test(text.trim())) {
+    const nextPage = page + 1;
+    if (nextPage * PAGE_SIZE >= services.length) {
+      return buildCollectPersonServiceMenu(lang, currentName, currentPersonIdx + 1, groupSize, page);
+    }
+    sessions.updateSession(userId, { servicePage: nextPage });
+    return buildCollectPersonServiceMenu(lang, currentName, currentPersonIdx + 1, groupSize, nextPage);
+  }
+
+  const localIdx  = parseInt(text, 10) - 1;
+  const actualIdx = page * PAGE_SIZE + localIdx;
+  const pageCount = Math.min(PAGE_SIZE, services.length - page * PAGE_SIZE);
+
+  if (isNaN(localIdx) || localIdx < 0 || localIdx >= pageCount) {
+    return `${t(lang, 'invalid_choice', { max: pageCount })}\n\n${buildCollectPersonServiceMenu(lang, currentName, currentPersonIdx + 1, groupSize, page)}`;
+  }
+
+  const service = services[actualIdx];
+  const updatedPersons = [...persons];
+  updatedPersons[currentPersonIdx] = { name: currentName, service };
+
+  if (currentPersonIdx < groupSize - 1) {
+    // More persons to collect
+    const nextIdx = currentPersonIdx + 1;
+    sessions.updateSession(userId, {
+      state: 'COLLECTING_PERSON_NAME',
+      persons: updatedPersons,
+      currentPersonIdx: nextIdx,
+      servicePage: 0,
+    });
+    return t(lang, 'collect_person_name', { n: nextIdx + 1, total: groupSize });
+  }
+
+  // All persons collected — find available dates
+  const allEmployees = q.getActiveEmployees();
+  const availableDates = q.getAvailableDates(allEmployees, lang);
   sessions.updateSession(userId, {
     state: 'SELECTING_DATE',
+    persons: updatedPersons,
     groupSize,
+    employees: allEmployees,
     isAnyEmployee: true,
-    availableDates: dates,
+    availableDates,
     datePage: 0,
   });
-  return buildDateMenu(lang, dates, selectedService, 0);
+  return buildDateMenu(lang, availableDates, null, 0);
 }
 
 function onEmployee(userId, text, session) {
@@ -446,7 +627,7 @@ function onEmployee(userId, text, session) {
     selectedEmployee = employees[empIdx];
   }
 
-  const dates = q.getAvailableDates(employees);
+  const dates = q.getAvailableDates(employees, lang);
   sessions.updateSession(userId, {
     state: 'SELECTING_DATE',
     selectedEmployee,
@@ -463,8 +644,20 @@ async function onDate(userId, text, session) {
   const dates = session.availableDates;
 
   if (isBack(text, lang)) {
-    sessions.updateSession(userId, { state: 'SELECTING_GROUP_SIZE', datePage: 0 });
-    return buildGroupSizeMenu(lang, session.selectedService, session.employees?.length || 1);
+    if (session.persons?.length > 1) {
+      // Multi-person: back to last person's service selection
+      const lastIdx = session.persons.length - 1;
+      sessions.updateSession(userId, {
+        state: 'COLLECTING_PERSON_SERVICE',
+        currentPersonIdx: lastIdx,
+        servicePage: 0,
+        datePage: 0,
+      });
+      return buildCollectPersonServiceMenu(lang, session.persons[lastIdx].name, lastIdx + 1, session.groupSize);
+    }
+    // Single person: back to service selection
+    sessions.updateSession(userId, { state: 'SELECTING_SERVICE', datePage: 0 });
+    return buildServiceMenu(lang, true, session.servicePage || 0);
   }
 
   // "more" — next page of dates
@@ -488,11 +681,21 @@ async function onDate(userId, text, session) {
   const selectedDate = dates[actualIdx];
   const service      = session.selectedService;
   const employees    = session.employees || q.getActiveEmployees();
-  const groupSize    = session.groupSize || 1;
   let freeSlots;
 
-  if (groupSize > 1) {
-    freeSlots = await q.getAvailableSlotsForGroup(employees, selectedDate.date, service.duration, groupSize);
+  if (session.persons?.length > 1) {
+    // Multi-person: fill barbers in parallel waves (3 at once, 4th waits, etc.)
+    freeSlots = await q.getAvailableSlotsForBatchGroup(session.persons, employees, selectedDate.date);
+    if (freeSlots.length === 0) {
+      return `${t(lang, 'no_slots_multi', { date: selectedDate.fullDisplay })}\n\n${buildDateMenu(lang, dates, null, page)}`;
+    }
+    sessions.updateSession(userId, {
+      state: 'SELECTING_TIME',
+      selectedDate,
+      availableSlots: freeSlots,
+      slotPage: 0,
+    });
+    return buildTimeMenuMulti(lang, selectedDate, freeSlots, session.persons, 0);
   } else if (session.isAnyEmployee) {
     freeSlots = await q.getAvailableSlotsForAny(employees, selectedDate.date, service.duration);
   } else {
@@ -526,11 +729,14 @@ function onTime(userId, text, session) {
   if (/^(more|meer|más|plus|next|volgende|suivant)$/i.test(text.trim())) {
     const nextPage = page + 1;
     if (nextPage * PAGE_SIZE >= slots.length) {
-      // Already on the last page — just re-show it
-      return buildTimeMenu(lang, session.selectedDate, slots, session.selectedService, page);
+      return session.persons?.length > 1
+        ? buildTimeMenuMulti(lang, session.selectedDate, slots, session.persons, page)
+        : buildTimeMenu(lang, session.selectedDate, slots, session.selectedService, page);
     }
     sessions.updateSession(userId, { slotPage: nextPage });
-    return buildTimeMenu(lang, session.selectedDate, slots, session.selectedService, nextPage);
+    return session.persons?.length > 1
+      ? buildTimeMenuMulti(lang, session.selectedDate, slots, session.persons, nextPage)
+      : buildTimeMenu(lang, session.selectedDate, slots, session.selectedService, nextPage);
   }
 
   // Slot selection — number is 1-based within the current page
@@ -539,18 +745,29 @@ function onTime(userId, text, session) {
   const pageCount = Math.min(PAGE_SIZE, slots.length - page * PAGE_SIZE);
 
   if (isNaN(localIdx) || localIdx < 0 || localIdx >= pageCount) {
-    return `${t(lang, 'invalid_choice', { max: pageCount })}\n\n${buildTimeMenu(lang, session.selectedDate, slots, session.selectedService, page)}`;
+    const invalidMenu = session.persons?.length > 1
+      ? buildTimeMenuMulti(lang, session.selectedDate, slots, session.persons, page)
+      : buildTimeMenu(lang, session.selectedDate, slots, session.selectedService, page);
+    return `${t(lang, 'invalid_choice', { max: pageCount })}\n\n${invalidMenu}`;
   }
 
-  // If this customer already has a saved profile, skip name entry
+  const selectedSlot = slots[actualIdx];
+
+  // Multi-person booking: skip name entry (names already collected), go straight to confirm
+  if (session.persons?.length > 1) {
+    sessions.updateSession(userId, { state: 'CONFIRMING_BOOKING', selectedTime: selectedSlot, slotPage: 0 });
+    return buildConfirmationSummaryMulti(lang, session.persons, session.selectedDate, selectedSlot);
+  }
+
+  // Single person: skip name entry if customer profile already has a name
   const customerPhone  = userId.replace(/@\S+$/, '');
   const knownCustomer  = q.getCustomerByPhone(customerPhone);
   if (knownCustomer?.name) {
-    sessions.updateSession(userId, { state: 'CONFIRMING_BOOKING', selectedTime: slots[actualIdx], slotPage: 0, userName: knownCustomer.name });
-    return buildConfirmationSummary(lang, knownCustomer.name, session.selectedService, session.selectedDate, slots[actualIdx], session.groupSize || 1);
+    sessions.updateSession(userId, { state: 'CONFIRMING_BOOKING', selectedTime: selectedSlot, slotPage: 0, userName: knownCustomer.name });
+    return buildConfirmationSummary(lang, knownCustomer.name, session.selectedService, session.selectedDate, selectedSlot, session.groupSize || 1);
   }
 
-  sessions.updateSession(userId, { state: 'ENTERING_NAME', selectedTime: slots[actualIdx], slotPage: 0 });
+  sessions.updateSession(userId, { state: 'ENTERING_NAME', selectedTime: selectedSlot, slotPage: 0 });
   return t(lang, 'enter_name');
 }
 
@@ -573,6 +790,11 @@ async function onConfirm(userId, text, session) {
     return t(lang, 'confirm_invalid');
   }
 
+  // ── Multi-person booking path ─────────────────────────────────────────────
+  if (session.persons?.length > 1) {
+    return onConfirmMulti(userId, session);
+  }
+
   const { selectedService, selectedDate, selectedTime, userName } = session;
   const groupSize     = session.groupSize || 1;
   const mainCount     = selectedTime.mainCount  || 1;
@@ -583,12 +805,18 @@ async function onConfirm(userId, text, session) {
   const shopCalId     = q.getSetting('google_calendar_id') ||
     (process.env.GOOGLE_CALENDAR_ID !== 'primary' ? process.env.GOOGLE_CALENDAR_ID : null);
 
+  // Link all appointments from this booking so they can be cancelled together.
+  // Only set for real groups (2+ people); single bookings stay ungrouped.
+  const totalToBook = mainCount + overflowCount;
+  const groupId     = totalToBook > 1 ? newGroupId() : '';
+
   // ── Helper: create one appointment + calendar event ───────────────────────
   async function bookOne(slot, barber) {
     const dbResult = q.createAppointment({
       employee_id:      barber?.id || null,
       customer_name:    userName,
       customer_phone:   customerPhone,
+      booking_group:    groupId,
       service_id:       selectedService.id,
       service_name:     selectedService.name,
       service_emoji:    selectedService.emoji,
@@ -653,10 +881,13 @@ async function onConfirm(userId, text, session) {
 
   // ── Build reply message ───────────────────────────────────────────────────
   const totalCount   = mainCount + overflowCount;
-  const footer       = (q.getBotMessage('confirmed_footer') || t(lang, 'booked_footer_default'))
-    .replace('{shop_name}',  q.getSetting('shop_name')  || "Jayden's Barbershop")
-    .replace('{shop_phone}', q.getSetting('shop_phone') || '');
-  const calendarNote = t(lang, 'calendar_invite_note');
+  // Footer is auto-translated. Point customers to the self-service "manage" menu
+  // option for cancel/reschedule; fall back to "contact us" if that option is off.
+  const manageNum  = manageMenuNumber();
+  const cancelLine = manageNum ? t(lang, 'booked_cancel_self', { option: manageNum }) : t(lang, 'booked_cancel_note');
+  const footer       = `${t(lang, 'booked_footer_default')}\n\n_${cancelLine}_`;
+  // Only mention the calendar invite when the .ics attachment will actually be sent.
+  const calendarNote = q.getSetting('ics_enabled') !== '0' ? t(lang, 'calendar_invite_note') : null;
   const totalPrice   = (+selectedService.price * totalCount).toFixed(0);
 
   const lines = [
@@ -664,22 +895,18 @@ async function onConfirm(userId, text, session) {
       ? t(lang, 'booked_header_group', { count: totalCount })
       : t(lang, 'booked_header'),
     ``,
-    `👤 *${userName}*`,
-    `${selectedService.emoji} ${selectedService.name}  |  📅 ${selectedDate.fullDisplay}`,
-    ``,
   ];
 
   if (totalCount === 1) {
-    // Single appointment — same layout as before
+    // Minimal single-booking confirmation: booking code only. Customer name,
+    // service, date, barber, time and price are intentionally omitted.
     const b = mainBookings[0];
     lines.push(t(lang, 'booked_code', { code: b.code }));
-    lines.push(t(lang, 'booked_code_note'));
-    if (b.barber) lines.push(t(lang, 'booked_barber', { barber: b.barber.name }));
-    lines.push(`${t(lang, 'confirm_time')}: *${selectedTime.display}*`);
-    lines.push(`⏱️ ${t(lang, 'confirm_duration')}: *${selectedService.duration} min*`);
-    lines.push(`💰 ${t(lang, 'confirm_price')}: *${CUR()} ${selectedService.price}*`);
   } else {
-    // Group — show time slots then codes per person
+    // Group — show customer, service/date, time slots, then codes per person
+    lines.push(`👤 *${userName}*`);
+    lines.push(`${selectedService.emoji} ${selectedService.name}  |  📅 ${selectedDate.fullDisplay}`);
+    lines.push(``);
     lines.push(`⏰ *${selectedTime.display}* — ${mainCount} ${t(lang, 'group_people_lower')}:`);
     mainBookings.forEach((b, i) => {
       const barberPart = b.barber ? ` (${b.barber.name})` : '';
@@ -697,19 +924,22 @@ async function onConfirm(userId, text, session) {
 
     lines.push(``);
     lines.push(t(lang, 'booked_code_note'));
-    lines.push(`⏱️ ${t(lang, 'confirm_duration')}: *${selectedService.duration} min pp*`);
-    lines.push(`💰 ${t(lang, 'confirm_price')}: *${CUR()} ${totalPrice} (${totalCount}×${selectedService.price})*`);
+    lines.push(`${t(lang, 'confirm_price')}: *${CUR()} ${totalPrice} (${totalCount}×${selectedService.price})*`);
   }
+
+  const shopAddress  = q.getSetting('shop_address') || '';
+  const mapsLink     = q.getSetting('google_maps_link') || '';
+  const addressLine  = mapsLink ? `📍 ${shopAddress}\n${mapsLink}` : `📍 ${shopAddress}`;
 
   lines.push(
     ``,
-    `📍 ${q.getSetting('shop_address') || ''}`,
+    addressLine,
     `📞 ${q.getSetting('shop_phone') || ''}`,
     ``,
     footer,
-    ``,
-    calendarNote,
   );
+  if (calendarNote) lines.push(``, calendarNote);
+  lines.push(``, t(lang, 'payment_methods'));
 
   const replyText = lines.filter(l => l !== undefined && l !== null).join('\n');
 
@@ -748,7 +978,7 @@ async function onConfirm(userId, text, session) {
         });
         const base64  = qrDataUrl.split(',')[1];
         const media   = new MessageMedia('image/png', base64, `checkin-${booking.code}.png`);
-        const caption = `🔲 *Check-in code: ${booking.code}*\n_Show this to your barber when you arrive. They will scan it to confirm your visit._`;
+        const caption = `🔲 *Check-in code: ${booking.code}*`;
         await wClient.sendMessage(userId, media, { caption });
       }
     }
@@ -767,7 +997,7 @@ async function onConfirm(userId, text, session) {
     ``,
     `👤 ${userName}`,
     `📱 ${customerPhone}`,
-    `${selectedService.emoji} ${selectedService.name} (${selectedService.duration} min)`,
+    `${selectedService.emoji} ${selectedService.name}`,
     `💈 ${firstBarber}`,
     `📅 ${selectedDate.fullDisplay}  ⏰ ${selectedTime.display}`,
     totalCount > 1 ? `👥 Group of ${totalCount}` : null,
@@ -777,6 +1007,141 @@ async function onConfirm(userId, text, session) {
   notifyCS(csLines).catch(() => {});
 
   return { text: replyText, ics, filename: `appointment-${firstBooking.code}.ics` };
+}
+
+// ── Multi-person booking confirmation ────────────────────────────────────────
+
+async function onConfirmMulti(userId, session) {
+  const lang = session.language;
+  const { persons, selectedDate, selectedTime } = session;
+  const dateStr       = selectedDate.date.toISOString().split('T')[0];
+  const customerPhone = userId.replace(/@\S+$/, '');
+  const allEmployees  = q.getActiveEmployees();
+  const shopCalId     = q.getSetting('google_calendar_id') ||
+    (process.env.GOOGLE_CALENDAR_ID !== 'primary' ? process.env.GOOGLE_CALENDAR_ID : null);
+
+  // Multi-person bookings are always 2+ people → always one group.
+  const groupId = newGroupId();
+
+  const bookings = [];
+
+  for (const assignment of selectedTime.assignments) {
+    const person  = persons[assignment.personIdx];
+    const service = person.service;
+    const barber  = allEmployees.find(e => e.id === assignment.employeeId) || null;
+    const slot    = { start: assignment.start, end: assignment.end, display: assignment.display };
+
+    const dbResult = q.createAppointment({
+      employee_id:      barber?.id || null,
+      customer_name:    person.name,
+      customer_phone:   customerPhone,
+      booking_group:    groupId,
+      service_id:       service.id,
+      service_name:     service.name,
+      service_emoji:    service.emoji,
+      service_duration: service.duration,
+      service_price:    service.price,
+      start_time:       slot.start,
+      end_time:         slot.end,
+    });
+
+    if (shopCalId) {
+      try {
+        const r = await calendarCreate({
+          calendarId:    shopCalId,
+          service,
+          startTime:     new Date(slot.start),
+          endTime:       new Date(slot.end),
+          customerName:  person.name,
+          bookingCode:   dbResult.booking_code,
+          employeeName:  barber?.name,
+          employeeColor: barber?.color,
+        });
+        if (r.success) {
+          q.updateAppointment(dbResult.lastInsertRowid, { google_event_id: r.eventId, google_event_link: r.eventLink });
+        }
+      } catch (err) {
+        console.error('❌ Calendar sync exception (booking still saved):', err.message);
+      }
+    }
+
+    bookings.push({ code: dbResult.booking_code, barber, slot, person, service });
+  }
+
+  sessions.resetSession(userId);
+
+  // Build confirmation message
+  // Footer is auto-translated. Point customers to the self-service "manage" menu
+  // option for cancel/reschedule; fall back to "contact us" if that option is off.
+  const manageNum  = manageMenuNumber();
+  const cancelLine = manageNum ? t(lang, 'booked_cancel_self', { option: manageNum }) : t(lang, 'booked_cancel_note');
+  const footer = `${t(lang, 'booked_footer_default')}\n\n_${cancelLine}_`;
+
+  const totalPrice = bookings.reduce((sum, b) => sum + (+b.service.price || 0), 0).toFixed(0);
+
+  const lines = [
+    t(lang, 'booked_header_multi', { count: persons.length }),
+    ``,
+    `📅 *${selectedDate.fullDisplay}*`,
+    ``,
+  ];
+
+  for (const b of bookings) {
+    lines.push(t(lang, 'booked_person_divider'));
+    lines.push(`👤 *${b.person.name}*`);
+    lines.push(`${b.service.emoji} ${b.service.name}  |  ⏰ ${b.slot.display}${selectedTime.isParallel ? '' : ''}`);
+    if (b.barber) lines.push(`💈 ${b.barber.name}`);
+    lines.push(`🎫 *${b.code}*  |  💰 ${CUR()} ${b.service.price}`);
+    lines.push(``);
+  }
+
+  lines.push(t(lang, 'booked_code_note'));
+  lines.push(t(lang, 'multi_total_price', { currency: CUR(), total: totalPrice }));
+
+  const shopAddress = q.getSetting('shop_address') || '';
+  const mapsLink    = q.getSetting('google_maps_link') || '';
+  const addressLine = mapsLink ? `📍 ${shopAddress}\n${mapsLink}` : `📍 ${shopAddress}`;
+
+  lines.push(``, addressLine, `📞 ${q.getSetting('shop_phone') || ''}`, ``, footer);
+  lines.push(``, t(lang, 'payment_methods'));
+
+  const replyText = lines.filter(l => l !== undefined && l !== null).join('\n');
+
+  // Register/update customer profiles (use first person as "primary" for the phone)
+  q.getOrCreateCustomer(persons[0].name, customerPhone);
+
+  // Send QR check-in codes
+  try {
+    const { getClient }    = require('../whatsapp-client');
+    const { MessageMedia } = require('whatsapp-web.js');
+    const QRCode  = require('qrcode');
+    const wClient = getClient();
+    if (wClient) {
+      for (const b of bookings) {
+        const qrDataUrl = await QRCode.toDataURL(b.code, { width: 300, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } });
+        const base64  = qrDataUrl.split(',')[1];
+        const media   = new MessageMedia('image/png', base64, `checkin-${b.code}.png`);
+        const caption = `🔲 *Check-in code: ${b.code}* (${b.person.name})`;
+        await wClient.sendMessage(userId, media, { caption });
+      }
+    }
+  } catch (e) {
+    console.error('⚠️  QR send failed (booking still confirmed):', e.message);
+  }
+
+  // Notify CS
+  const allCodes = bookings.map(b => b.code).join(', ');
+  notifyCS([
+    `📋 *New Group Booking Confirmed*`,
+    ``,
+    `📱 ${customerPhone}`,
+    `📅 ${selectedDate.fullDisplay}`,
+    `👥 Group of ${persons.length}`,
+    ...bookings.map(b => `  • ${b.person.name}: ${b.service.emoji} ${b.service.name} @ ${b.slot.display} (${b.barber?.name || '—'}) 🎫 ${b.code}`),
+    `💰 ${CUR()} ${totalPrice}`,
+  ].join('\n')).catch(() => {});
+
+  return replyText;
 }
 
 // ── Appointment management handlers ──────────────────────────────────────────
@@ -828,6 +1193,40 @@ async function onRating(userId, text, session) {
 // ── Appointment management ────────────────────────────────────────────────────
 
 /** Step 1: Customer enters their booking code. */
+/** Customer picks one of their listed appointments (or types a code as a fallback). */
+function onManageSelect(userId, text, session) {
+  const lang = session.language;
+  const list = session.manageList || [];
+
+  if (isBack(text, lang)) {
+    sessions.updateSession(userId, { state: 'MAIN_MENU' });
+    return buildMainMenu(lang);
+  }
+
+  const idx = parseInt(text.trim(), 10) - 1;
+  if (!isNaN(idx) && idx >= 0 && idx < list.length) {
+    const appt = list[idx];
+    sessions.updateSession(userId, { state: 'MANAGING_OPTIONS', managedAppointment: appt });
+    return buildManageOptions(lang, appt);
+  }
+
+  // The extra "cancel all my appointments" option (shown only when 2+)
+  if (list.length > 1 && idx === list.length) {
+    sessions.updateSession(userId, { state: 'CONFIRMING_CANCEL', cancelList: list, managedAppointment: null });
+    return buildCancelConfirmGroup(lang, list);
+  }
+
+  // Allow a booking code too (e.g. for an appointment booked under another number)
+  const byCode = q.getAppointmentByCode(text.trim().toUpperCase());
+  if (byCode && !['cancelled', 'completed', 'no-show'].includes(byCode.status)) {
+    sessions.updateSession(userId, { state: 'MANAGING_OPTIONS', managedAppointment: byCode });
+    return buildManageOptions(lang, byCode);
+  }
+
+  const maxOpt = list.length > 1 ? list.length + 1 : list.length;
+  return `${t(lang, 'invalid_choice', { max: maxOpt })}\n\n${buildManageList(lang, list)}`;
+}
+
 function onManageBooking(userId, text, session) {
   const lang = session.language;
   if (isBack(text, lang)) {
@@ -863,7 +1262,7 @@ function onManageOptions(userId, text, session) {
       // Reschedule — use the same assigned employee
       const employee  = appt.employee_id ? q.getEmployee(appt.employee_id) : null;
       const employees = employee ? [employee] : q.getActiveEmployees();
-      const dates     = q.getAvailableDates(employees);
+      const dates     = q.getAvailableDates(employees, lang);
 
       if (dates.length === 0) {
         return `${t(lang, 'no_dates_available')}\n\n${buildManageOptions(lang, appt)}`;
@@ -898,7 +1297,17 @@ function onManageOptions(userId, text, session) {
           return `❌ *Cancellations are no longer accepted* within ${windowStr} of your appointment.\n\nTo cancel, please contact us directly${shopPhone ? ` at ${shopPhone}` : ''}.\n\n${buildMainMenu(lang)}`;
         }
       }
-      sessions.updateSession(userId, { state: 'CONFIRMING_CANCEL' });
+      // Group booking? Offer "only this one" vs "all" first.
+      // Primary: explicit booking_group (new bookings). Fallback: same phone +
+      // same day (covers bookings made before booking_group existed).
+      let group = q.getActiveGroupAppointments(appt.booking_group);
+      if (group.length <= 1) group = q.getActiveSiblingAppointments(appt);
+      if (group.length > 1) {
+        sessions.updateSession(userId, { state: 'CONFIRMING_CANCEL_SCOPE', cancelGroup: group });
+        return buildCancelScope(lang, appt, group.length);
+      }
+
+      sessions.updateSession(userId, { state: 'CONFIRMING_CANCEL', cancelList: [appt] });
       return buildCancelConfirm(lang, appt);
     }
     default:
@@ -906,24 +1315,33 @@ function onManageOptions(userId, text, session) {
   }
 }
 
-/** Cancel confirmation. */
-async function onConfirmCancel(userId, text, session) {
-  const lang = session.language;
-  const appt = session.managedAppointment;
+/** Group cancel: customer chooses to cancel only this one (1) or the whole group (2). */
+function onConfirmCancelScope(userId, text, session) {
+  const lang  = session.language;
+  const appt  = session.managedAppointment;
+  const group = session.cancelGroup || [];
 
-  if (isNo(text, lang) || isBack(text, lang)) {
+  if (isBack(text, lang)) {
     sessions.updateSession(userId, { state: 'MANAGING_OPTIONS' });
     return buildManageOptions(lang, appt);
   }
-  if (!isYes(text, lang)) return buildCancelConfirm(lang, appt);
 
-  // Mark cancelled in DB
+  switch (text.trim()) {
+    case '1':
+      sessions.updateSession(userId, { state: 'CONFIRMING_CANCEL', cancelList: [appt] });
+      return buildCancelConfirm(lang, appt);
+    case '2':
+      sessions.updateSession(userId, { state: 'CONFIRMING_CANCEL', cancelList: group });
+      return buildCancelConfirmGroup(lang, group);
+    default:
+      return `${t(lang, 'invalid_choice', { max: 2 })}\n\n${buildCancelScope(lang, appt, group.length)}`;
+  }
+}
+
+/** Cancel one appointment in the DB + remove its shop-calendar event (best-effort). */
+async function cancelOne(appt, shopCalId) {
   q.cancelAppointment(appt.id);
-
-  // Remove from Google Calendar (best-effort)
   try {
-    const shopCalId = q.getSetting('google_calendar_id') ||
-      (process.env.GOOGLE_CALENDAR_ID !== 'primary' ? process.env.GOOGLE_CALENDAR_ID : null);
     if (shopCalId && appt.google_event_id) {
       const r = await calendarCancel({ calendarId: shopCalId, eventId: appt.google_event_id });
       if (r.success) console.log(`🗑️  Shop calendar event removed for booking ${appt.booking_code}`);
@@ -932,22 +1350,50 @@ async function onConfirmCancel(userId, text, session) {
   } catch (err) {
     console.error('⚠️  Calendar cancel exception (appointment still cancelled):', err.message);
   }
+}
 
-  // Notify CS numbers about the cancellation
+/** Cancel confirmation — handles a single appointment or a whole group. */
+async function onConfirmCancel(userId, text, session) {
+  const lang    = session.language;
+  const list    = (session.cancelList && session.cancelList.length)
+    ? session.cancelList
+    : [session.managedAppointment];
+  const isGroup = list.length > 1;
+
+  if (isNo(text, lang) || isBack(text, lang)) {
+    if (session.managedAppointment) {
+      sessions.updateSession(userId, { state: 'MANAGING_OPTIONS' });
+      return buildManageOptions(lang, session.managedAppointment);
+    }
+    sessions.updateSession(userId, { state: 'MAIN_MENU' });
+    return buildMainMenu(lang);
+  }
+  if (!isYes(text, lang)) {
+    return isGroup ? buildCancelConfirmGroup(lang, list) : buildCancelConfirm(lang, list[0]);
+  }
+
+  const shopCalId = q.getSetting('google_calendar_id') ||
+    (process.env.GOOGLE_CALENDAR_ID !== 'primary' ? process.env.GOOGLE_CALENDAR_ID : null);
+
+  for (const appt of list) {
+    await cancelOne(appt, shopCalId);
+  }
+
+  // Notify CS — one combined message covering every cancelled code
   const cancelPhone = userId.replace(/@\S+$/, '');
+  const first       = list[0];
   notifyCS([
-    `❌ *Booking Cancelled by Customer*`,
+    isGroup ? `❌ *Group Booking Cancelled by Customer (${list.length})*` : `❌ *Booking Cancelled by Customer*`,
     ``,
-    `👤 ${appt.customer_name}`,
+    `👤 ${first.customer_name}`,
     `📱 ${cancelPhone}`,
-    `${appt.service_emoji || ''} ${appt.service_name}`,
-    `💈 ${appt.employee_name || '—'}`,
-    `📅 ${new Date(appt.start_time).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}  ⏰ ${new Date(appt.start_time).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' })}`,
-    `🎫 Code: ${appt.booking_code}`,
-  ].join('\n')).catch(() => {});
+    isGroup ? null : `${first.service_emoji || ''} ${first.service_name}`,
+    `📅 ${new Date(first.start_time).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}`,
+    `🎫 Code${isGroup ? 's' : ''}: ${list.map(a => a.booking_code).join(', ')}`,
+  ].filter(l => l !== null).join('\n')).catch(() => {});
 
   sessions.resetSession(userId);
-  return t(lang, 'manage_cancelled');
+  return isGroup ? t(lang, 'manage_cancelled_group', { count: list.length }) : t(lang, 'manage_cancelled');
 }
 
 /** Reschedule — pick new date. */
@@ -1085,8 +1531,7 @@ async function onConfirmReschedule(userId, text, session) {
     `${service.emoji} ${t(lang, 'confirm_service')}: *${service.name}*`,
     `${t(lang, 'confirm_date')}: *${session.rescheduleDate.fullDisplay}*`,
     `${t(lang, 'confirm_time')}: *${session.rescheduleTime.display}*`,
-    `⏱️ ${t(lang, 'confirm_duration')}: *${service.duration} min*`,
-    ``, t(lang, 'calendar_invite_note'),
+    ...(q.getSetting('ics_enabled') !== '0' ? [``, t(lang, 'calendar_invite_note')] : []),
   ].filter(l => l !== '').join('\n');
 
   const ics = generateIcs({
@@ -1110,66 +1555,48 @@ async function onConfirmReschedule(userId, text, session) {
 
 // ── Gallery ───────────────────────────────────────────────────────────────────
 
-function buildGalleryMenu(lang, tags) {
-  const list = tags.map((tag, i) => `${num(i)} ${tag.charAt(0).toUpperCase() + tag.slice(1)}`).join('\n');
-  return `${t(lang, 'gallery_header')}\n\n${list}\n\n_${t(lang, 'reply_or_back')}_`;
-}
-
-async function onGallery(userId, text, session) {
-  const lang = session.language;
-  const tags = session.galleryTags || [];
-
-  if (isBack(text, lang)) {
-    sessions.updateSession(userId, { state: 'MAIN_MENU' });
-    return buildMainMenu(lang);
-  }
-
-  const localIdx = parseInt(text, 10) - 1;
-  if (isNaN(localIdx) || localIdx < 0 || localIdx >= tags.length) {
-    return `${t(lang, 'gallery_invalid')}\n\n${buildGalleryMenu(lang, tags)}`;
-  }
-
-  const selectedTag = tags[localIdx];
-  const photos      = q.getPhotos(selectedTag);
-
-  if (photos.length === 0) {
-    return `${t(lang, 'gallery_no_photos')}\n\n${buildGalleryMenu(lang, tags)}`;
-  }
-
-  sessions.updateSession(userId, { state: 'MAIN_MENU' });
-
-  // Send photos via WhatsApp (max 5, non-blocking)
-  const MAX = 5;
-  const toSend = photos.slice(0, MAX);
-  const extra  = photos.length - MAX;
+// Post the entire photo gallery — every uploaded picture, no category picker.
+async function sendGallery(userId, lang) {
   const path   = require('path');
   const fs     = require('fs');
+  const photos = q.getPhotos()
+    .filter(p => fs.existsSync(path.join(process.cwd(), 'data', 'uploads', p.filename)));
+
+  if (photos.length === 0) {
+    sessions.updateSession(userId, { state: 'MAIN_MENU' });
+    return `${t(lang, 'gallery_no_tags')}\n\n${buildMainMenu(lang)}`;
+  }
 
   try {
     const { getClient }    = require('../whatsapp-client');
     const { MessageMedia } = require('whatsapp-web.js');
     const wClient = getClient();
     if (wClient) {
-      const header = t(lang, 'gallery_sending', { tag: selectedTag.charAt(0).toUpperCase() + selectedTag.slice(1) });
-      await wClient.sendMessage(userId, header);
-      // Send photos one by one
-      for (const photo of toSend) {
+      await wClient.sendMessage(userId, t(lang, 'gallery_header'));
+      // Send every photo. The last one carries the "return to menu" hint so it
+      // stays the final message in the chat.
+      for (let i = 0; i < photos.length; i++) {
+        const photo    = photos[i];
+        const isLast   = i === photos.length - 1;
         const filepath = path.join(process.cwd(), 'data', 'uploads', photo.filename);
-        if (!fs.existsSync(filepath)) continue;
-        const ext   = photo.filename.split('.').pop().toLowerCase();
-        const mime  = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
-        const b64   = fs.readFileSync(filepath).toString('base64');
-        const media = new MessageMedia(mime, b64, photo.filename);
-        await wClient.sendMessage(userId, media, { caption: photo.caption || undefined });
+        const ext      = photo.filename.split('.').pop().toLowerCase();
+        const mime     = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+        const b64      = fs.readFileSync(filepath).toString('base64');
+        const media    = new MessageMedia(mime, b64, photo.filename);
+        let caption    = photo.caption || '';
+        if (isLast) caption += `${caption ? '\n\n' : ''}${t(lang, 'media_return_hint')}`;
+        await wClient.sendMessage(userId, media, { caption: caption || undefined });
       }
-      if (extra > 0) {
-        await wClient.sendMessage(userId, t(lang, 'gallery_more', { count: extra }));
-      }
+      // Park the customer: any next message just re-shows the menu.
+      sessions.updateSession(userId, { state: 'AWAITING_MENU_RETURN' });
+      return null;
     }
   } catch (e) {
     console.error('⚠️  Gallery send error:', e.message);
   }
 
+  // No client or nothing sent — fall back to showing the menu.
+  sessions.updateSession(userId, { state: 'MAIN_MENU' });
   return buildMainMenu(lang);
 }
 
@@ -1192,16 +1619,29 @@ async function onTraining(userId, lang) {
     const wClient          = getClient();
 
     if (wClient) {
-      for (const video of videos) {
-        const filepath = path.join(process.cwd(), 'data', 'uploads', video.filename);
-        if (!fs.existsSync(filepath)) continue;
-        const ext   = video.filename.split('.').pop().toLowerCase();
-        const mime  = ext === 'mov' ? 'video/quicktime' : 'video/mp4';
-        const b64   = fs.readFileSync(filepath).toString('base64');
-        const media = new MessageMedia(mime, b64, video.filename);
-        await wClient.sendMessage(userId, media, { caption: video.caption || undefined });
+      // Only videos whose files actually exist — so the return hint lands on
+      // the genuinely last message in the chat.
+      const existing = videos.filter(v =>
+        fs.existsSync(path.join(process.cwd(), 'data', 'uploads', v.filename)));
+      if (existing.length === 0) {
+        return `${t(lang, 'training_unavailable')}\n\n${buildMainMenu(lang)}`;
       }
-      return buildMainMenu(lang);
+      for (let i = 0; i < existing.length; i++) {
+        const video    = existing[i];
+        const isLast   = i === existing.length - 1;
+        const filepath = path.join(process.cwd(), 'data', 'uploads', video.filename);
+        const ext      = video.filename.split('.').pop().toLowerCase();
+        const mime     = ext === 'mov' ? 'video/quicktime' : 'video/mp4';
+        const b64      = fs.readFileSync(filepath).toString('base64');
+        const media    = new MessageMedia(mime, b64, video.filename);
+        const caption  = isLast
+          ? `${video.caption ? video.caption + '\n\n' : ''}${t(lang, 'media_return_hint')}`
+          : (video.caption || undefined);
+        await wClient.sendMessage(userId, media, { caption });
+      }
+      // Park the customer: any next message just re-shows the menu.
+      sessions.updateSession(userId, { state: 'AWAITING_MENU_RETURN' });
+      return null;
     }
   } catch (e) {
     console.error('⚠️  Training send error:', e.message);
@@ -1225,6 +1665,7 @@ const MENU_ITEM_LABEL = {
   manage:   (lang) => `📋 ${t(lang, 'menu_manage')}`,
   training: (lang) => t(lang, 'menu_training'),
   feedback: (lang) => t(lang, 'menu_feedback'),
+  privacy:  (lang) => t(lang, 'menu_privacy'),
 };
 
 const MENU_ITEM_EMOJI = {
@@ -1237,6 +1678,7 @@ const MENU_ITEM_EMOJI = {
   manage:   '📋',
   training: '🎓',
   feedback: '💬',
+  privacy:  '🔒',
 };
 
 function getMenuItems() {
@@ -1255,7 +1697,16 @@ function getMenuItems() {
     { action: 'manage',   enabled: true  },
     { action: 'training', enabled: false },
     { action: 'feedback', enabled: true  },
+    { action: 'privacy',  enabled: true  },
   ];
+}
+
+// Live menu number of the "manage" option (cancel/reschedule self-service),
+// or null if that option is disabled. Stays correct if the menu is reordered.
+function manageMenuNumber() {
+  const items = getMenuItems().filter(m => m.enabled);
+  const idx   = items.findIndex(m => m.action === 'manage');
+  return idx >= 0 ? idx + 1 : null;
 }
 
 function buildMainMenu(lang, customHeader = null) {
@@ -1282,16 +1733,16 @@ function buildServiceMenu(lang, isBooking, page = 0) {
   const hasMore     = services.length > start + PAGE_SIZE;
   const hdr         = isBooking ? t(lang, 'book_header') : t(lang, 'services_header');
   const list        = pageServices.map((s, i) =>
-    `${num(i)} ${s.emoji} *${s.name}*\n   ⏱️ ${s.duration} min  |  💰 ${CUR()} ${s.price}\n   ${s.description}`
+    `${num(i)} ${s.emoji} *${s.name}*\n   💰 ${CUR()} ${s.price}\n   ${s.description}`
   ).join('\n\n');
-  const moreHint    = hasMore ? `\n\n➡️ _Type *more* to see more services_` : '';
+  const moreHint    = hasMore ? `\n\n➡️ _${t(lang, 'more_services')}_` : '';
   return `${hdr}\n\n${list}${moreHint}\n\n_${t(lang, isBooking ? 'reply_or_back' : 'reply_number')}_`;
 }
 
 function buildServiceList(lang) {
   const services = q.getActiveServices();
   const list = services.map((s, i) =>
-    `${num(i)} ${s.emoji} *${s.name}* — ${CUR()} ${s.price}\n   ⏱️ ${s.duration} min`
+    `${num(i)} ${s.emoji} *${s.name}* — ${CUR()} ${s.price}`
   ).join('\n\n');
   return `${t(lang, 'services_header')}\n\n${list}\n\n${t(lang, 'book_prompt')}\n${t(lang, 'back_menu')}`;
 }
@@ -1304,14 +1755,71 @@ function buildGroupSizeMenu(lang, service, maxBarbers) {
     let label = i === 1
       ? `${t(lang, 'group_just_me')}`
       : `${i} ${t(lang, 'group_people')}`;
-    if (i > maxBarbers) {
-      const first = maxBarbers;
-      const rest  = i - maxBarbers;
-      label += ` — _${t(lang, 'group_overflow_note', { first, rest })}_`;
-    }
     lines.push(`${num(i - 1)} ${label}`);
   }
-  return `${t(lang, 'group_size_prompt')}\n_${t(lang, 'service_label')}: ${service.emoji} ${service.name}_\n\n${lines.join('\n')}\n\n_${t(lang, 'reply_or_back')}_`;
+  const serviceLine = service ? `\n_${t(lang, 'service_label')}: ${service.emoji} ${service.name}_` : '';
+  return `${t(lang, 'group_size_prompt')}${serviceLine}\n\n${lines.join('\n')}\n\n_${t(lang, 'reply_or_back')}_`;
+}
+
+/**
+ * Service selection menu for a specific person in a multi-person booking.
+ */
+function buildCollectPersonServiceMenu(lang, personName, personNum, total, page = 0) {
+  const services    = q.getActiveServices();
+  const start       = page * PAGE_SIZE;
+  const pageServices = services.slice(start, start + PAGE_SIZE);
+  const hasMore     = services.length > start + PAGE_SIZE;
+  const header      = t(lang, 'collect_person_service', { n: personNum, name: personName, total });
+  const list        = pageServices.map((s, i) =>
+    `${num(i)} ${s.emoji} *${s.name}*\n   💰 ${CUR()} ${s.price}${s.description ? `\n   ${s.description}` : ''}`
+  ).join('\n\n');
+  const moreHint    = hasMore ? `\n\n➡️ _${t(lang, 'more_services')}_` : '';
+  return `${header}\n\n${list}${moreHint}\n\n_${t(lang, 'reply_or_back')}_`;
+}
+
+/**
+ * Time selection menu for multi-person bookings.
+ * Shows each time slot and briefly describes who's parallel / sequential.
+ */
+function buildTimeMenuMulti(lang, date, slots, persons, page = 0) {
+  const start     = page * PAGE_SIZE;
+  const pageSlots = slots.slice(start, start + PAGE_SIZE);
+  const hasMore   = slots.length > start + PAGE_SIZE;
+
+  const list = pageSlots.map((s, i) => `${num(i)} ${s.display}`).join('\n');
+
+  const moreHint = hasMore ? `\n\n➡️ _${t(lang, 'more_times')}_` : '';
+  return `${t(lang, 'select_time')}\n_${date.fullDisplay}_\n\n${list}${moreHint}\n\n_${t(lang, 'reply_or_back')}_`;
+}
+
+/**
+ * Confirmation summary for multi-person booking.
+ */
+function buildConfirmationSummaryMulti(lang, persons, date, slot) {
+  const allEmployees = q.getActiveEmployees();
+  const lines = [t(lang, 'confirm_header'), ``];
+  lines.push(`📅 *${date.fullDisplay}*`);
+  lines.push(``);
+
+  const totalPrice = persons.reduce((sum, p) => sum + (+p.service?.price || 0), 0).toFixed(0);
+
+  for (let i = 0; i < persons.length; i++) {
+    const person     = persons[i];
+    const assignment = slot.assignments?.find(a => a.personIdx === i);
+    const timeDisplay = assignment?.display || slot.display;
+    const barber     = allEmployees.find(e => e.id === assignment?.employeeId);
+    lines.push(`👤 *${person.name}*`);
+    lines.push(`${person.service.emoji} ${person.service.name}  |  ⏰ ${timeDisplay}`);
+    if (barber) lines.push(`💈 ${barber.name}`);
+    lines.push(`💰 ${CUR()} ${person.service.price}`);
+    if (i < persons.length - 1) lines.push(``);
+  }
+
+  lines.push(``);
+  lines.push(t(lang, 'multi_total_price', { currency: CUR(), total: totalPrice }));
+  lines.push(``);
+  lines.push(t(lang, 'confirm_prompt'));
+  return lines.join('\n');
 }
 
 function buildEmployeeMenu(lang, employees, service, allowAny) {
@@ -1327,8 +1835,9 @@ function buildDateMenu(lang, dates, service, page = 0) {
   const pageDates = dates.slice(start, start + PAGE_SIZE);
   const hasMore   = dates.length > start + PAGE_SIZE;
   const list      = pageDates.map((d, i) => `${num(i)} ${d.fullDisplay}`).join('\n');
-  const moreHint  = hasMore ? `\n\n➡️ _Type *more* to see more dates_` : '';
-  return `${t(lang, 'select_date')}\n_${t(lang, 'service_label')}: ${service.emoji} ${service.name}_\n\n${list}${moreHint}\n\n_${t(lang, 'reply_or_back')}_`;
+  const moreHint  = hasMore ? `\n\n➡️ _${t(lang, 'more_dates')}_` : '';
+  const svcLine   = service ? `\n_${t(lang, 'service_label')}: ${service.emoji} ${service.name}_` : '';
+  return `${t(lang, 'select_date')}${svcLine}\n\n${list}${moreHint}\n\n_${t(lang, 'reply_or_back')}_`;
 }
 
 function buildTimeMenu(lang, date, slots, service, page = 0) {
@@ -1354,9 +1863,9 @@ function buildTimeMenu(lang, date, slots, service, page = 0) {
     : '';
 
   // Pagination footer
-  const moreHint  = hasMore ? `\n\n➡️ _Type *more* to see more times_` : '';
+  const moreHint  = hasMore ? `\n\n➡️ _${t(lang, 'more_times')}_` : '';
 
-  return `${t(lang, 'select_time')}\n_${date.fullDisplay} — ${service.emoji} ${service.name} (${service.duration} min)_\n\n${groupNote}${list}${moreHint}\n\n_${t(lang, 'reply_or_back')}_`;
+  return `${t(lang, 'select_time')}\n_${date.fullDisplay} — ${service.emoji} ${service.name}_\n\n${groupNote}${list}${moreHint}\n\n_${t(lang, 'reply_or_back')}_`;
 }
 
 function buildConfirmationSummary(lang, name, service, date, time, groupSize = 1) {
@@ -1378,13 +1887,11 @@ function buildConfirmationSummary(lang, name, service, date, time, groupSize = 1
     } else if (overflowCount > 0) {
       lines.push(`⏰ +${overflowCount} ${t(lang, 'group_follow_up')}`);
     }
-    lines.push(`${t(lang, 'confirm_duration')}: *${service.duration} min pp*`);
     lines.push(`${t(lang, 'confirm_price')}: *${CUR()} ${totalPrice} (${totalCount}×${service.price})*`);
   } else {
     lines.push(`${service.emoji} ${t(lang, 'confirm_service')}  : *${service.name}*`);
     lines.push(`${t(lang, 'confirm_date')}    : *${date.fullDisplay}*`);
     lines.push(`${t(lang, 'confirm_time')}    : *${time.display}*`);
-    lines.push(`${t(lang, 'confirm_duration')}: *${service.duration} min*`);
     lines.push(`${t(lang, 'confirm_price')}   : *${CUR()} ${service.price}*`);
   }
 
@@ -1399,6 +1906,12 @@ function buildHours(lang) {
     `${days[r.day_of_week]}: ${r.is_open ? `*${fmt24(r.open_time)} – ${fmt24(r.close_time)}*` : `*${t(lang, 'hours_closed')}*`}`
   );
   return `${t(lang, 'hours_header')}\n\n${lines.join('\n')}\n\n${t(lang, 'hours_back')}`;
+}
+
+function buildPrivacy(lang) {
+  // Shown in the customer's chosen language (falls back to Dutch).
+  const text = PRIVACY_POLICY[lang] || PRIVACY_POLICY.nl;
+  return `${text}\n\n${t(lang, 'back_menu')}`;
 }
 
 function buildLocation(lang) {
@@ -1478,11 +1991,24 @@ async function onFeedbackSuggestion(userId, text, session) {
   return t(lang, 'feedback_suggestion_thanks');
 }
 
+/** Numbered list of the customer's own upcoming appointments. */
+function buildManageList(lang, appts) {
+  const lines = [t(lang, 'manage_list_header'), ``];
+  appts.forEach((a, i) => {
+    const emp = a.employee_id ? q.getEmployee(a.employee_id) : null;
+    lines.push(`${num(i)} ${a.service_emoji || ''} *${a.service_name}* — ${fmtApptDate(a.start_time, lang)} ${fmtApptTime(a.start_time, lang)}${emp ? ` · ${emp.name}` : ''}`);
+  });
+  // Extra option: cancel everything at once (only worth showing for 2+)
+  if (appts.length > 1) lines.push(``, `${num(appts.length)} ${t(lang, 'cancel_all_mine')}`);
+  lines.push(``, `_${t(lang, 'reply_or_back')}_`);
+  return lines.join('\n');
+}
+
 /** Show appointment details + reschedule/cancel options. */
 function buildManageOptions(lang, appt) {
   const emp     = appt.employee_id ? q.getEmployee(appt.employee_id) : null;
-  const dateStr = appt.start_time ? fmtApptDate(appt.start_time) : '—';
-  const timeStr = appt.start_time ? fmtApptTime(appt.start_time) : '—';
+  const dateStr = appt.start_time ? fmtApptDate(appt.start_time, lang) : '—';
+  const timeStr = appt.start_time ? fmtApptTime(appt.start_time, lang) : '—';
   return [
     t(lang, 'manage_header'), ``,
     `🎫 *${appt.booking_code}*`,
@@ -1503,8 +2029,31 @@ function buildCancelConfirm(lang, appt) {
   return [
     t(lang, 'manage_cancel_confirm'), ``,
     `🎫 *${appt.booking_code}*  ${appt.service_emoji || ''} ${appt.service_name}`,
-    `📅 ${fmtApptDate(appt.start_time)}  ⏰ ${fmtApptTime(appt.start_time)}`,
+    `📅 ${fmtApptDate(appt.start_time, lang)}  ⏰ ${fmtApptTime(appt.start_time, lang)}`,
   ].join('\n');
+}
+
+/** Group cancel — ask whether to cancel only this appointment or the whole group. */
+function buildCancelScope(lang, appt, count) {
+  return [
+    t(lang, 'cancel_scope_prompt', { count }),
+    ``,
+    `🎫 *${appt.booking_code}*  ${appt.service_emoji || ''} ${appt.service_name}`,
+    ``,
+    `${num(0)} ${t(lang, 'cancel_scope_one')}`,
+    `${num(1)} ${t(lang, 'cancel_scope_all', { count })}`,
+    ``,
+    `_${t(lang, 'reply_or_back')}_`,
+  ].join('\n');
+}
+
+/** Group cancel — confirmation listing every appointment that will be cancelled. */
+function buildCancelConfirmGroup(lang, list) {
+  const lines = [t(lang, 'cancel_confirm_group', { count: list.length }), ``];
+  for (const a of list) {
+    lines.push(`🎫 *${a.booking_code}*  ${a.service_emoji || ''} ${a.service_name} — ${fmtApptDate(a.start_time, lang)} ${fmtApptTime(a.start_time, lang)}`);
+  }
+  return lines.join('\n');
 }
 
 /** Reschedule confirmation summary. */
@@ -1519,25 +2068,27 @@ function buildRescheduleConfirm(lang, session, time) {
     `${service.emoji} ${t(lang, 'confirm_service')}: *${service.name}*`,
     `${t(lang, 'confirm_date')}: *${session.rescheduleDate.fullDisplay}*`,
     `${t(lang, 'confirm_time')}: *${time.display}*`,
-    `⏱️ ${t(lang, 'confirm_duration')}: *${service.duration} min*`,
     ``,
     t(lang, 'manage_reschedule_confirm'),
     t(lang, 'confirm_prompt'),
   ].filter(l => l !== '').join('\n');
 }
 
-/** Format an ISO timestamp → "Wed, Jun 3" (local time). */
-function fmtApptDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+/** Format an ISO timestamp → localized short date ("wo 3 jun" / "Wed, Jun 3"). */
+function fmtApptDate(iso, lang = 'en') {
+  return q.localeLongDate(iso, lang);
 }
 
-/** Format an ISO timestamp → "3:00 PM" (local time). */
-function fmtApptTime(iso) {
+/** Format an ISO timestamp → English 12-hour "3:00 PM", other languages 24-hour "15:00". */
+function fmtApptTime(iso, lang = 'en') {
   const d = new Date(iso);
   const h = d.getHours(), m = d.getMinutes();
-  const p = h >= 12 ? 'PM' : 'AM';
-  const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  return `${hr}:${String(m).padStart(2, '0')} ${p}`;
+  if (lang === 'en') {
+    const p  = h >= 12 ? 'PM' : 'AM';
+    const hr = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    return `${hr}:${String(m).padStart(2, '0')} ${p}`;
+  }
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 function fmt24(ti) {

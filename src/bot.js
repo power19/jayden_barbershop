@@ -13,6 +13,9 @@ function createBot() {
     }),
     puppeteer: {
       headless: true,
+      // Fail an individual hung CDP call after 2 min instead of the 180s default.
+      // The health-probe watchdog in index.js catches a dead page far sooner.
+      protocolTimeout: 120_000,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',

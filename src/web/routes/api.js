@@ -327,9 +327,8 @@ router.post('/appointments', async (req, res) => {
       const employee    = req.body.employee_id ? q.getEmployee(req.body.employee_id) : null;
       const shopCalId   = q.getSetting('google_calendar_id') ||
         (process.env.GOOGLE_CALENDAR_ID !== 'primary' ? process.env.GOOGLE_CALENDAR_ID : null);
-      const barberCalId = employee?.google_calendar_id || null;
 
-      if (shopCalId || barberCalId) {
+      if (shopCalId) {
         const eventData = {
           service:       { name: req.body.service_name, emoji: req.body.service_emoji, duration: req.body.service_duration, price: req.body.service_price },
           startTime:     new Date(req.body.start_time),
@@ -339,17 +338,11 @@ router.post('/appointments', async (req, res) => {
           employeeName:  employee?.name,
           employeeColor: employee?.color,
         };
-        // Shop calendar — always
-        if (shopCalId) {
-          const r = await calCreate({ ...eventData, calendarId: shopCalId });
-          if (r.success) {
-            q.updateAppointment(id, { google_event_id: r.eventId, google_event_link: r.eventLink });
-            calendarSynced = true;
-          }
+        const r = await calCreate({ ...eventData, calendarId: shopCalId });
+        if (r.success) {
+          q.updateAppointment(id, { google_event_id: r.eventId, google_event_link: r.eventLink });
+          calendarSynced = true;
         }
-        // Barber's personal calendar — if different from shop calendar
-        if (barberCalId && barberCalId !== shopCalId)
-          await calCreate({ ...eventData, calendarId: barberCalId });
       }
     } catch (calErr) {
       console.error('⚠️  Calendar sync skipped:', calErr.message);
@@ -401,13 +394,6 @@ router.put('/appointments/:id', async (req, res) => {
         cancelEvent({ calendarId: shopCalId, eventId: appt.google_event_id })
           .catch(e => console.error('⚠️  Calendar cancel (shop):', e.message));
       }
-
-      // Delete from barber's personal calendar if set
-      const employee = appt.employee_id ? q.getEmployee(appt.employee_id) : null;
-      if (employee?.google_calendar_id) {
-        cancelEvent({ calendarId: employee.google_calendar_id, eventId: appt.google_event_id })
-          .catch(e => console.error('⚠️  Calendar cancel (barber):', e.message));
-      }
     }
 
     res.json({ ok: true });
@@ -425,9 +411,8 @@ router.post('/appointments/:id/sync-calendar', async (req, res) => {
     const employee    = appt.employee_id ? q.getEmployee(appt.employee_id) : null;
     const shopCalId   = q.getSetting('google_calendar_id') ||
       (process.env.GOOGLE_CALENDAR_ID !== 'primary' ? process.env.GOOGLE_CALENDAR_ID : null);
-    const barberCalId = employee?.google_calendar_id || null;
 
-    if (!shopCalId && !barberCalId)
+    if (!shopCalId)
       return res.status(400).json({ error: 'No calendar configured. Set a Calendar ID in Settings.' });
 
     const { createAppointment: calCreate } = require('../../services/googleCalendar');
@@ -441,19 +426,10 @@ router.post('/appointments/:id/sync-calendar', async (req, res) => {
       employeeColor: employee?.color,
     };
 
-    // Shop calendar — always (owner sees all appointments)
-    let shopResult = { success: false, error: 'No shop calendar set' };
-    if (shopCalId) {
-      shopResult = await calCreate({ ...eventData, calendarId: shopCalId });
-      if (shopResult.success) q.updateAppointment(appt.id, { google_event_id: shopResult.eventId, google_event_link: shopResult.eventLink });
-    }
-
-    // Barber's personal calendar — if configured and different from shop calendar
-    if (barberCalId && barberCalId !== shopCalId)
-      await calCreate({ ...eventData, calendarId: barberCalId });
-
-    if (!shopResult.success && !barberCalId)
-      return res.status(500).json({ error: shopResult.error });
+    // Shop calendar — barbers see it via their read-only share
+    const shopResult = await calCreate({ ...eventData, calendarId: shopCalId });
+    if (shopResult.success) q.updateAppointment(appt.id, { google_event_id: shopResult.eventId, google_event_link: shopResult.eventLink });
+    else return res.status(500).json({ error: shopResult.error });
 
     res.json({ ok: true, eventLink: shopResult.eventLink });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -783,7 +759,7 @@ router.get('/customers/:id/appointments', (req, res) => {
 
 // ── Menu order ────────────────────────────────────────────────────────────────
 
-const VALID_ACTIONS = new Set(['booking','hours','location','contact','gallery','language','manage','training','feedback']);
+const VALID_ACTIONS = new Set(['booking','hours','location','contact','gallery','language','manage','training','feedback','privacy']);
 
 router.get('/menu', (req, res) => {
   try {
@@ -865,12 +841,15 @@ router.post('/leaves', async (req, res) => {
     if (!employee_id || !start_date) return res.status(400).json({ error: 'employee_id and start_date required' });
     if (end_date && end_date < start_date) return res.status(400).json({ error: 'end_date must be on or after start_date' });
 
-    // Create Google Calendar all-day event on the employee's personal calendar
-    const employee = q.getEmployee(employee_id);
+    // Create a Google Calendar all-day event on the shop calendar
+    // (barbers see it through their read-only share)
+    const employee  = q.getEmployee(employee_id);
+    const shopCalId = q.getSetting('google_calendar_id') ||
+      (process.env.GOOGLE_CALENDAR_ID !== 'primary' ? process.env.GOOGLE_CALENDAR_ID : null);
     let googleEventId = '';
-    if (employee?.google_calendar_id) {
+    if (shopCalId && employee) {
       const gcalResult = await createLeaveEvent({
-        calendarId:   employee.google_calendar_id,
+        calendarId:   shopCalId,
         employeeName: employee.name,
         startDate:    start_date,
         endDate:      end_date || start_date,
@@ -892,12 +871,13 @@ router.post('/leaves', async (req, res) => {
 
 router.delete('/leaves/:id', async (req, res) => {
   try {
-    const leave    = q.getLeave(req.params.id);
-    const employee = leave?.employee_id ? q.getEmployee(leave.employee_id) : null;
+    const leave = q.getLeave(req.params.id);
 
-    // Remove from Google Calendar
-    if (leave?.google_event_id && employee?.google_calendar_id) {
-      cancelEvent({ calendarId: employee.google_calendar_id, eventId: leave.google_event_id })
+    // Remove from the shop calendar
+    const shopCalId = q.getSetting('google_calendar_id') ||
+      (process.env.GOOGLE_CALENDAR_ID !== 'primary' ? process.env.GOOGLE_CALENDAR_ID : null);
+    if (leave?.google_event_id && shopCalId) {
+      cancelEvent({ calendarId: shopCalId, eventId: leave.google_event_id })
         .catch(e => console.error('⚠️  Leave calendar delete:', e.message));
     }
 

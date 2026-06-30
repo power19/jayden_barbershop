@@ -26,12 +26,16 @@ const TRANSLATIONS = {
     menu_location:     '📍 Location',
     menu_contact:      '📞 Contact Us',
     menu_reply:        'Reply with a number to continue.',
+    media_return_hint: '↩️ _Type *menu* to return to the main menu._',
 
     // Service selection
     book_header:       '📅 *Book an Appointment*\n\nSelect a service:',
     services_header:   '💈 *Services & Prices*',
     reply_number:      'Reply with a number',
     reply_or_back:     'Reply with a number, or *0* to go back',
+    more_dates:        'Type *more* to see more dates',
+    more_times:        'Type *more* to see more available times',
+    more_services:     'Type *more* to see more services',
     no_barbers_service:'😔 Sorry, no barbers are currently available for *{service}*. Please contact us directly.',
     invalid_choice:    'Please reply with *1 – {max}*.',
 
@@ -70,6 +74,9 @@ const TRANSLATIONS = {
     booked_code_note:  '_Save this code — you may need it to reschedule._',
     booked_barber:     '💈 Barber: *{barber}*',
     booked_footer_default: 'We look forward to seeing you! ✂️',
+    booked_cancel_note:    'To cancel or reschedule, contact us directly.',
+    booked_cancel_self:    'To cancel or reschedule, choose option {option} in the menu.',
+    payment_methods:       'Payment methods:\n✅ card (PIN) accepted\n✅ bank transfer accepted\n✅ cash accepted',
 
     // Hours / location / contact
     hours_header:      '⏰ *Business Hours*',
@@ -91,12 +98,20 @@ const TRANSLATIONS = {
 
     // Appointment management (option 7)
     manage_prompt:            '📋 *Manage Appointment*\n\nEnter your *4-character booking code*:\n\n_Type *0* to go back_',
+    manage_list_header:       '📋 *Your Upcoming Appointments*\n\nSelect one to reschedule or cancel:',
+    cancel_all_mine:          '🗑️ Cancel ALL my appointments',
+    manage_no_appts:          '📋 You have no upcoming appointments under this number.\n\nIf you booked under a different number, enter your *4-character booking code*, or type *0* to go back.',
     manage_not_found:         '❌ Booking code not found. Please check and try again, or type *0* to go back.',
     manage_invalid_status:    '⚠️ This appointment is already *{status}* and cannot be modified. Type *menu* to return.',
     manage_header:            '📋 *Your Appointment*',
     manage_option_1:          '📅 Reschedule',
     manage_option_2:          '❌ Cancel Appointment',
     manage_cancel_confirm:    '⚠️ Are you sure you want to *cancel* this appointment?\n\nReply *YES* to cancel  |  *NO* to keep it',
+    cancel_scope_prompt:      '👥 This booking is part of a group of *{count}*. What would you like to cancel?',
+    cancel_scope_one:         'Cancel only this appointment',
+    cancel_scope_all:         'Cancel all {count} appointments',
+    cancel_confirm_group:     '⚠️ Are you sure you want to *cancel all {count}* appointments?\n\nReply *YES* to cancel  |  *NO* to keep them',
+    manage_cancelled_group:   '✅ All {count} appointments have been cancelled.\n\nWe hope to see you again soon! 💈 Type *menu* to return.',
     manage_cancelled:         '✅ Your appointment has been cancelled.\n\nWe hope to see you again soon! 💈 Type *menu* to return.',
     manage_rescheduled:       '🔄 *Appointment Rescheduled!*',
     manage_reschedule_confirm:'Confirm new date & time?',
@@ -106,7 +121,7 @@ const TRANSLATIONS = {
 
     // Group / family booking
     group_size_prompt:  '👥 *For how many people is this appointment?*',
-    group_just_me:      'Just me',
+    group_just_me:      '1 person',
     group_people:       'people',
     group_people_lower: 'person(s)',
     group_overflow_note:'({first} together + {rest} right after)',
@@ -116,13 +131,23 @@ const TRANSLATIONS = {
     booked_header_group:'🎉 *Group Booking Confirmed! ({count} people)*',
     confirm_group:      '👥 Group',
 
+    // Multi-person booking
+    collect_person_name:    '👤 *Person {n} of {total}*\n\nWhat is their name?',
+    collect_person_service: '✂️ *Person {n} — {name}*\n\nChoose a service:',
+    group_parallel_note:    '(at the same time)',
+    group_sequential_note:  '(right after)',
+    booked_header_multi:    '🎉 *Appointments Confirmed! ({count} people)*',
+    booked_person_divider:  '─────────────────',
+    multi_total_price:      '💰 *Total: {currency} {total}*',
+    no_slots_multi:         '😔 No available time slots found for this combination on *{date}*. Please pick another day.',
+
     // Barber training
     menu_training:      '🎓 Barber Training',
     training_unavailable: '😔 No training material has been set up yet. Check back soon!',
 
     // Photo gallery
     menu_gallery:       '📸 Browse Styles & Gallery',
-    gallery_header:     '📸 *Browse Our Styles*\n\nChoose a category:',
+    gallery_header:     '📸 *Browse Our Styles*',
     gallery_no_tags:    '📸 No photos uploaded yet. Check back soon!',
     gallery_no_photos:  '😔 No photos found for that style. Try another category!',
     gallery_sending:    '📸 *{tag}* styles:',
@@ -150,6 +175,7 @@ const TRANSLATIONS = {
 
     // Feedback / complaints & suggestions
     menu_feedback:             '💬 Complaints & Suggestions',
+    menu_privacy:              '🔒 Privacy & Policy',
     feedback_header:           '💬 *Complaints & Suggestions*\n\nWhat would you like to do?',
     feedback_option_complaint: '1️⃣ File a Complaint',
     feedback_option_suggestion:'2️⃣ Share a Suggestion',
@@ -179,11 +205,15 @@ const TRANSLATIONS = {
     menu_location:     '📍 Locatie',
     menu_contact:      '📞 Contact',
     menu_reply:        'Antwoord met een cijfer om door te gaan.',
+    media_return_hint: '↩️ _Typ *menu* om terug te keren naar het hoofdmenu._',
 
     book_header:       '📅 *Afspraak Maken*\n\nKies een dienst:',
     services_header:   '💈 *Diensten & Prijzen*',
     reply_number:      'Antwoord met een cijfer',
     reply_or_back:     'Antwoord met een cijfer, of *0* om terug te gaan',
+    more_dates:        'Typ *more* om meer beschikbare dagen te zien',
+    more_times:        'Typ *more* om meer beschikbare tijden te zien',
+    more_services:     'Typ *more* om meer diensten te zien',
     no_barbers_service:'😔 Sorry, geen kapper beschikbaar voor *{service}*. Neem rechtstreeks contact op.',
     invalid_choice:    'Antwoord met *1 – {max}*.',
 
@@ -213,9 +243,12 @@ const TRANSLATIONS = {
 
     booked_header:     '🎉 *Afspraak Bevestigd!*',
     booked_code:       '🎫 *Boekingscode: {code}*',
-    booked_code_note:  '_Bewaar deze code — u heeft deze mogelijk nodig om te verzetten._',
+    booked_code_note:  '_Bewaar deze code — u heeft deze mogelijk nodig om te verschuiven._',
     booked_barber:     '💈 Kapper: *{barber}*',
     booked_footer_default: 'We kijken uit naar uw bezoek! ✂️',
+    booked_cancel_note:    'Om te annuleren of te verschuiven, neem direct contact met ons op.',
+    booked_cancel_self:    'Om te annuleren of te verschuiven, kies optie {option} in het menu.',
+    payment_methods:       'Betaalwijze:\n✅ pinnen mogelijk\n✅ overmaken mogelijk\n✅ cash mogelijk',
 
     hours_header:      '⏰ *Openingstijden*',
     hours_back:        '🏠 Typ *menu* om terug te gaan',
@@ -234,14 +267,22 @@ const TRANSLATIONS = {
 
     // Appointment management (option 7)
     manage_prompt:            '📋 *Afspraak Beheren*\n\nVoer uw *4-tekens boekingscode* in:\n\n_Typ *0* om terug te gaan_',
+    manage_list_header:       '📋 *Uw Aankomende Afspraken*\n\nKies er een om te verschuiven of te annuleren:',
+    cancel_all_mine:          '🗑️ AL mijn afspraken annuleren',
+    manage_no_appts:          '📋 U heeft geen aankomende afspraken onder dit nummer.\n\nAls u onder een ander nummer heeft geboekt, voer uw *4-tekens boekingscode* in, of typ *0* om terug te gaan.',
     manage_not_found:         '❌ Boekingscode niet gevonden. Controleer en probeer opnieuw, of typ *0* om terug te gaan.',
     manage_invalid_status:    '⚠️ Deze afspraak is al *{status}* en kan niet worden gewijzigd. Typ *menu* om terug te keren.',
     manage_header:            '📋 *Uw Afspraak*',
-    manage_option_1:          '📅 Verzetten',
+    manage_option_1:          '📅 Verschuiven',
     manage_option_2:          '❌ Afspraak Annuleren',
     manage_cancel_confirm:    '⚠️ Weet u zeker dat u deze afspraak wilt *annuleren*?\n\nAntwoord *JA* om te annuleren  |  *NEE* om te behouden',
+    cancel_scope_prompt:      '👥 Deze boeking maakt deel uit van een groep van *{count}*. Wat wilt u annuleren?',
+    cancel_scope_one:         'Alleen deze afspraak annuleren',
+    cancel_scope_all:         'Alle {count} afspraken annuleren',
+    cancel_confirm_group:     '⚠️ Weet u zeker dat u *alle {count}* afspraken wilt *annuleren*?\n\nAntwoord *JA* om te annuleren  |  *NEE* om te behouden',
+    manage_cancelled_group:   '✅ Alle {count} afspraken zijn geannuleerd.\n\nWe hopen u snel weer te zien! 💈 Typ *menu* om terug te keren.',
     manage_cancelled:         '✅ Uw afspraak is geannuleerd.\n\nWij hopen u snel weer te zien! 💈 Typ *menu* om terug te keren.',
-    manage_rescheduled:       '🔄 *Afspraak Verzet!*',
+    manage_rescheduled:       '🔄 *Afspraak Verschoven!*',
     manage_reschedule_confirm:'Nieuwe datum & tijd bevestigen?',
     no_dates_available:       '😔 Geen beschikbare datums gevonden. Neem rechtstreeks contact op.',
 
@@ -249,7 +290,7 @@ const TRANSLATIONS = {
 
     // Group / family booking
     group_size_prompt:  '👥 *Voor hoeveel personen is deze afspraak?*',
-    group_just_me:      'Alleen ik',
+    group_just_me:      '1 persoon',
     group_people:       'personen',
     group_people_lower: 'persoon/personen',
     group_overflow_note:'({first} tegelijk + {rest} daarna)',
@@ -259,13 +300,23 @@ const TRANSLATIONS = {
     booked_header_group:'🎉 *Groepsboeking Bevestigd! ({count} personen)*',
     confirm_group:      '👥 Groep',
 
+    // Multi-person booking
+    collect_person_name:    '👤 *Persoon {n} van {total}*\n\nNaam van de persoon?',
+    collect_person_service: '✂️ *Persoon {n} — {name}*\n\nKies een dienst:',
+    group_parallel_note:    '(tegelijk)',
+    group_sequential_note:  '(direct daarna)',
+    booked_header_multi:    '🎉 *Afspraken Bevestigd! ({count} personen)*',
+    booked_person_divider:  '─────────────────',
+    multi_total_price:      '💰 *Totaal: {currency} {total}*',
+    no_slots_multi:         '😔 Geen beschikbare tijdsloten gevonden voor deze combinatie op *{date}*. Kies een andere dag.',
+
     // Barber training
     menu_training:      '🎓 Kapperstraining',
     training_unavailable: '😔 Er is nog geen trainingsmateriaal beschikbaar. Kijk later nog eens!',
 
     // Photo gallery
     menu_gallery:       '📸 Stijlen & Galerij Bekijken',
-    gallery_header:     '📸 *Onze Stijlen*\n\nKies een categorie:',
+    gallery_header:     '📸 *Onze Stijlen*',
     gallery_no_tags:    '📸 Nog geen foto\'s beschikbaar. Kom binnenkort terug!',
     gallery_no_photos:  '😔 Geen foto\'s gevonden voor die stijl. Probeer een andere categorie!',
     gallery_sending:    '📸 *{tag}* stijlen:',
@@ -293,6 +344,7 @@ const TRANSLATIONS = {
 
     // Feedback / klachten & suggesties
     menu_feedback:             '💬 Klachten & Suggesties',
+    menu_privacy:              '🔒 Privacy & Beleid',
     feedback_header:           '💬 *Klachten & Suggesties*\n\nWat wilt u doen?',
     feedback_option_complaint: '1️⃣ Klacht Indienen',
     feedback_option_suggestion:'2️⃣ Suggestie Delen',
@@ -322,11 +374,15 @@ const TRANSLATIONS = {
     menu_location:     '📍 Ubicación',
     menu_contact:      '📞 Contáctenos',
     menu_reply:        'Responde con un número para continuar.',
+    media_return_hint: '↩️ _Escribe *menú* para volver al menú principal._',
 
     book_header:       '📅 *Reservar Cita*\n\nSelecciona un servicio:',
     services_header:   '💈 *Servicios & Precios*',
     reply_number:      'Responde con un número',
     reply_or_back:     'Responde con un número, o *0* para volver',
+    more_dates:        'Escribe *more* para ver más fechas',
+    more_times:        'Escribe *more* para ver más horarios',
+    more_services:     'Escribe *more* para ver más servicios',
     no_barbers_service:'😔 Lo sentimos, no hay barberos disponibles para *{service}*. Contáctenos directamente.',
     invalid_choice:    'Por favor responde con *1 – {max}*.',
 
@@ -359,6 +415,9 @@ const TRANSLATIONS = {
     booked_code_note:  '_Guarda este código — puede que lo necesites para reprogramar._',
     booked_barber:     '💈 Barbero: *{barber}*',
     booked_footer_default: '¡Esperamos verte pronto! ✂️',
+    booked_cancel_note:    'Para cancelar o reprogramar, contáctanos directamente.',
+    booked_cancel_self:    'Para cancelar o reprogramar, elige la opción {option} en el menú.',
+    payment_methods:       'Métodos de pago:\n✅ pago con tarjeta (PIN) disponible\n✅ transferencia bancaria disponible\n✅ efectivo disponible',
 
     hours_header:      '⏰ *Horario de Atención*',
     hours_back:        '🏠 Escribe *menú* para volver',
@@ -377,12 +436,20 @@ const TRANSLATIONS = {
 
     // Appointment management (option 7)
     manage_prompt:            '📋 *Gestionar Cita*\n\nIngresa tu *código de reserva de 4 caracteres*:\n\n_Escribe *0* para volver_',
+    manage_list_header:       '📋 *Tus Próximas Citas*\n\nSelecciona una para reprogramar o cancelar:',
+    cancel_all_mine:          '🗑️ Cancelar TODAS mis citas',
+    manage_no_appts:          '📋 No tienes citas próximas con este número.\n\nSi reservaste con otro número, ingresa tu *código de reserva de 4 caracteres*, o escribe *0* para volver.',
     manage_not_found:         '❌ Código de reserva no encontrado. Verifica e inténtalo de nuevo, o escribe *0* para volver.',
     manage_invalid_status:    '⚠️ Esta cita ya está *{status}* y no puede modificarse. Escribe *menú* para volver.',
     manage_header:            '📋 *Tu Cita*',
     manage_option_1:          '📅 Reprogramar',
     manage_option_2:          '❌ Cancelar Cita',
     manage_cancel_confirm:    '⚠️ ¿Estás seguro de que quieres *cancelar* esta cita?\n\nResponde *SÍ* para cancelar  |  *NO* para conservarla',
+    cancel_scope_prompt:      '👥 Esta reserva es parte de un grupo de *{count}*. ¿Qué deseas cancelar?',
+    cancel_scope_one:         'Cancelar solo esta cita',
+    cancel_scope_all:         'Cancelar las {count} citas',
+    cancel_confirm_group:     '⚠️ ¿Seguro que quieres *cancelar las {count}* citas?\n\nResponde *SÍ* para cancelar  |  *NO* para conservarlas',
+    manage_cancelled_group:   '✅ Las {count} citas han sido canceladas.\n\n¡Esperamos verte pronto! 💈 Escribe *menú* para volver.',
     manage_cancelled:         '✅ Tu cita ha sido cancelada.\n\n¡Esperamos verte pronto! 💈 Escribe *menú* para volver.',
     manage_rescheduled:       '🔄 *¡Cita Reprogramada!*',
     manage_reschedule_confirm:'¿Confirmas la nueva fecha y hora?',
@@ -392,7 +459,7 @@ const TRANSLATIONS = {
 
     // Group / family booking
     group_size_prompt:  '👥 *¿Para cuántas personas es esta cita?*',
-    group_just_me:      'Solo yo',
+    group_just_me:      '1 persona',
     group_people:       'personas',
     group_people_lower: 'persona(s)',
     group_overflow_note:'({first} juntas + {rest} justo después)',
@@ -402,13 +469,23 @@ const TRANSLATIONS = {
     booked_header_group:'🎉 *¡Reserva Grupal Confirmada! ({count} personas)*',
     confirm_group:      '👥 Grupo',
 
+    // Multi-person booking
+    collect_person_name:    '👤 *Persona {n} de {total}*\n\n¿Cuál es su nombre?',
+    collect_person_service: '✂️ *Persona {n} — {name}*\n\nElige un servicio:',
+    group_parallel_note:    '(al mismo tiempo)',
+    group_sequential_note:  '(justo después)',
+    booked_header_multi:    '🎉 *¡Citas Confirmadas! ({count} personas)*',
+    booked_person_divider:  '─────────────────',
+    multi_total_price:      '💰 *Total: {currency} {total}*',
+    no_slots_multi:         '😔 No se encontraron franjas horarias disponibles para esta combinación en *{date}*. Elige otro día.',
+
     // Barber training
     menu_training:      '🎓 Capacitación de Barberos',
     training_unavailable: '😔 Aún no hay material de capacitación disponible. ¡Vuelve pronto!',
 
     // Photo gallery
     menu_gallery:       '📸 Ver Estilos y Galería',
-    gallery_header:     '📸 *Nuestros Estilos*\n\nElige una categoría:',
+    gallery_header:     '📸 *Nuestros Estilos*',
     gallery_no_tags:    '📸 Aún no hay fotos disponibles. ¡Vuelve pronto!',
     gallery_no_photos:  '😔 No se encontraron fotos para ese estilo. ¡Prueba otra categoría!',
     gallery_sending:    '📸 Estilos de *{tag}*:',
@@ -436,6 +513,7 @@ const TRANSLATIONS = {
 
     // Feedback
     menu_feedback:             '💬 Quejas & Sugerencias',
+    menu_privacy:              '🔒 Privacidad & Política',
     feedback_header:           '💬 *Quejas & Sugerencias*\n\n¿Qué deseas hacer?',
     feedback_option_complaint: '1️⃣ Presentar una Queja',
     feedback_option_suggestion:'2️⃣ Compartir una Sugerencia',
@@ -465,11 +543,15 @@ const TRANSLATIONS = {
     menu_location:     '📍 Adresse',
     menu_contact:      '📞 Nous Contacter',
     menu_reply:        'Répondez avec un numéro pour continuer.',
+    media_return_hint: '↩️ _Tapez *menu* pour revenir au menu principal._',
 
     book_header:       '📅 *Prendre Rendez-vous*\n\nChoisissez un service :',
     services_header:   '💈 *Services & Tarifs*',
     reply_number:      'Répondez avec un numéro',
     reply_or_back:     'Répondez avec un numéro, ou *0* pour revenir',
+    more_dates:        'Tapez *more* pour voir plus de dates',
+    more_times:        'Tapez *more* pour voir plus d\'horaires',
+    more_services:     'Tapez *more* pour voir plus de services',
     no_barbers_service:'😔 Désolé, aucun barbier n\'est disponible pour *{service}*. Veuillez nous contacter directement.',
     invalid_choice:    'Veuillez répondre avec *1 – {max}*.',
 
@@ -502,6 +584,9 @@ const TRANSLATIONS = {
     booked_code_note:  '_Conservez ce code — vous pourriez en avoir besoin pour reprogrammer._',
     booked_barber:     '💈 Barbier : *{barber}*',
     booked_footer_default: 'Nous avons hâte de vous voir ! ✂️',
+    booked_cancel_note:    'Pour annuler ou reporter, contactez-nous directement.',
+    booked_cancel_self:    'Pour annuler ou reporter, choisissez l\'option {option} dans le menu.',
+    payment_methods:       'Moyens de paiement :\n✅ paiement par carte (PIN) possible\n✅ virement bancaire possible\n✅ paiement en espèces possible',
 
     hours_header:      '⏰ *Heures d\'Ouverture*',
     hours_back:        '🏠 Tapez *menu* pour revenir',
@@ -520,12 +605,20 @@ const TRANSLATIONS = {
 
     // Appointment management (option 7)
     manage_prompt:            '📋 *Gérer Rendez-vous*\n\nEntrez votre *code de réservation de 4 caractères* :\n\n_Tapez *0* pour revenir_',
+    manage_list_header:       '📋 *Vos Prochains Rendez-vous*\n\nSélectionnez-en un à reporter ou annuler :',
+    cancel_all_mine:          '🗑️ Annuler TOUS mes rendez-vous',
+    manage_no_appts:          '📋 Vous n\'avez aucun rendez-vous à venir sous ce numéro.\n\nSi vous avez réservé sous un autre numéro, entrez votre *code de réservation de 4 caractères*, ou tapez *0* pour revenir.',
     manage_not_found:         '❌ Code de réservation introuvable. Vérifiez et réessayez, ou tapez *0* pour revenir.',
     manage_invalid_status:    '⚠️ Ce rendez-vous est déjà *{status}* et ne peut pas être modifié. Tapez *menu* pour revenir.',
     manage_header:            '📋 *Votre Rendez-vous*',
     manage_option_1:          '📅 Reporter',
     manage_option_2:          '❌ Annuler le Rendez-vous',
     manage_cancel_confirm:    '⚠️ Êtes-vous sûr de vouloir *annuler* ce rendez-vous ?\n\nRépondez *OUI* pour annuler  |  *NON* pour le conserver',
+    cancel_scope_prompt:      '👥 Cette réservation fait partie d\'un groupe de *{count}*. Que souhaitez-vous annuler ?',
+    cancel_scope_one:         'Annuler uniquement ce rendez-vous',
+    cancel_scope_all:         'Annuler les {count} rendez-vous',
+    cancel_confirm_group:     '⚠️ Êtes-vous sûr de vouloir *annuler les {count}* rendez-vous ?\n\nRépondez *OUI* pour annuler  |  *NON* pour les conserver',
+    manage_cancelled_group:   '✅ Les {count} rendez-vous ont été annulés.\n\nNous espérons vous revoir bientôt ! 💈 Tapez *menu* pour revenir.',
     manage_cancelled:         '✅ Votre rendez-vous a été annulé.\n\nNous espérons vous revoir bientôt ! 💈 Tapez *menu* pour revenir.',
     manage_rescheduled:       '🔄 *Rendez-vous Reporté !*',
     manage_reschedule_confirm:'Confirmez la nouvelle date et heure ?',
@@ -535,7 +628,7 @@ const TRANSLATIONS = {
 
     // Group / family booking
     group_size_prompt:  '👥 *Pour combien de personnes est ce rendez-vous ?*',
-    group_just_me:      'Juste moi',
+    group_just_me:      '1 personne',
     group_people:       'personnes',
     group_people_lower: 'personne(s)',
     group_overflow_note:'({first} ensemble + {rest} juste après)',
@@ -545,13 +638,23 @@ const TRANSLATIONS = {
     booked_header_group:'🎉 *Réservation Groupée Confirmée ! ({count} personnes)*',
     confirm_group:      '👥 Groupe',
 
+    // Multi-person booking
+    collect_person_name:    '👤 *Personne {n} sur {total}*\n\nQuel est son nom ?',
+    collect_person_service: '✂️ *Personne {n} — {name}*\n\nChoisissez un service :',
+    group_parallel_note:    '(en même temps)',
+    group_sequential_note:  '(juste après)',
+    booked_header_multi:    '🎉 *Rendez-vous Confirmés ! ({count} personnes)*',
+    booked_person_divider:  '─────────────────',
+    multi_total_price:      '💰 *Total : {currency} {total}*',
+    no_slots_multi:         '😔 Aucun créneau disponible pour cette combinaison le *{date}*. Veuillez choisir un autre jour.',
+
     // Barber training
     menu_training:      '🎓 Formation Barbier',
     training_unavailable: '😔 Aucun matériel de formation n\'est disponible pour le moment. Revenez bientôt !',
 
     // Photo gallery
     menu_gallery:       '📸 Voir Styles & Galerie',
-    gallery_header:     '📸 *Nos Styles*\n\nChoisissez une catégorie :',
+    gallery_header:     '📸 *Nos Styles*',
     gallery_no_tags:    '📸 Aucune photo disponible pour l\'instant. Revenez bientôt !',
     gallery_no_photos:  '😔 Aucune photo trouvée pour ce style. Essayez une autre catégorie !',
     gallery_sending:    '📸 Styles *{tag}* :',
@@ -579,6 +682,7 @@ const TRANSLATIONS = {
 
     // Feedback
     menu_feedback:             '💬 Plaintes & Suggestions',
+    menu_privacy:              '🔒 Confidentialité & Règlement',
     feedback_header:           '💬 *Plaintes & Suggestions*\n\nQue souhaitez-vous faire ?',
     feedback_option_complaint: '1️⃣ Déposer une Plainte',
     feedback_option_suggestion:'2️⃣ Partager une Suggestion',
@@ -608,11 +712,15 @@ const TRANSLATIONS = {
     menu_location:     '📍 Localização',
     menu_contact:      '📞 Contato',
     menu_reply:        'Responda com um número para continuar.',
+    media_return_hint: '↩️ _Digite *menu* para voltar ao menu principal._',
 
     book_header:       '📅 *Agendar Horário*\n\nEscolha um serviço:',
     services_header:   '💈 *Serviços & Preços*',
     reply_number:      'Responda com um número',
     reply_or_back:     'Responda com um número, ou *0* para voltar',
+    more_dates:        'Digite *more* para ver mais datas',
+    more_times:        'Digite *more* para ver mais horários',
+    more_services:     'Digite *more* para ver mais serviços',
     no_barbers_service:'😔 Desculpe, nenhum barbeiro disponível para *{service}*. Por favor contate-nos diretamente.',
     invalid_choice:    'Por favor responda com *1 – {max}*.',
 
@@ -645,6 +753,9 @@ const TRANSLATIONS = {
     booked_code_note:  '_Guarde este código — pode ser necessário para reagendar._',
     booked_barber:     '💈 Barbeiro: *{barber}*',
     booked_footer_default: 'Estamos ansiosos para vê-lo! ✂️',
+    booked_cancel_note:    'Para cancelar ou remarcar, entre em contato conosco diretamente.',
+    booked_cancel_self:    'Para cancelar ou remarcar, escolha a opção {option} no menu.',
+    payment_methods:       'Formas de pagamento:\n✅ pagamento com cartão (PIN) disponível\n✅ transferência bancária disponível\n✅ dinheiro disponível',
 
     hours_header:      '⏰ *Horário de Funcionamento*',
     hours_back:        '🏠 Digite *menu* para voltar',
@@ -662,12 +773,20 @@ const TRANSLATIONS = {
     calendar_invite_note: '📆 Um convite de calendário está anexado — toque para salvar no Google ou Apple Calendário.',
 
     manage_prompt:            '📋 *Gerenciar Agendamento*\n\nInsira seu *código de reserva de 4 caracteres*:\n\n_Digite *0* para voltar_',
+    manage_list_header:       '📋 *Seus Próximos Agendamentos*\n\nSelecione um para remarcar ou cancelar:',
+    cancel_all_mine:          '🗑️ Cancelar TODOS os meus agendamentos',
+    manage_no_appts:          '📋 Você não tem agendamentos futuros neste número.\n\nSe agendou com outro número, insira seu *código de reserva de 4 caracteres*, ou digite *0* para voltar.',
     manage_not_found:         '❌ Código de reserva não encontrado. Verifique e tente novamente, ou digite *0* para voltar.',
     manage_invalid_status:    '⚠️ Este agendamento já está *{status}* e não pode ser modificado. Digite *menu* para voltar.',
     manage_header:            '📋 *Seu Agendamento*',
     manage_option_1:          '📅 Reagendar',
     manage_option_2:          '❌ Cancelar Agendamento',
     manage_cancel_confirm:    '⚠️ Tem certeza que deseja *cancelar* este agendamento?\n\nResponda *SIM* para cancelar  |  *NÃO* para manter',
+    cancel_scope_prompt:      '👥 Este agendamento faz parte de um grupo de *{count}*. O que deseja cancelar?',
+    cancel_scope_one:         'Cancelar apenas este agendamento',
+    cancel_scope_all:         'Cancelar todos os {count} agendamentos',
+    cancel_confirm_group:     '⚠️ Tem certeza que deseja *cancelar todos os {count}* agendamentos?\n\nResponda *SIM* para cancelar  |  *NÃO* para manter',
+    manage_cancelled_group:   '✅ Todos os {count} agendamentos foram cancelados.\n\nEsperamos vê-lo em breve! 💈 Digite *menu* para voltar.',
     manage_cancelled:         '✅ Seu agendamento foi cancelado.\n\nEsperamos vê-lo em breve! 💈 Digite *menu* para voltar.',
     manage_rescheduled:       '🔄 *Agendamento Reagendado!*',
     manage_reschedule_confirm:'Confirmar nova data e hora?',
@@ -676,7 +795,7 @@ const TRANSLATIONS = {
     back_to_main_menu:  'Reserva cancelada — você voltou ao menu principal.',
 
     group_size_prompt:  '👥 *Para quantas pessoas é este agendamento?*',
-    group_just_me:      'Só eu',
+    group_just_me:      '1 pessoa',
     group_people:       'pessoas',
     group_people_lower: 'pessoa(s)',
     group_overflow_note:'({first} juntos + {rest} logo após)',
@@ -686,11 +805,21 @@ const TRANSLATIONS = {
     booked_header_group:'🎉 *Agendamento em Grupo Confirmado! ({count} pessoas)*',
     confirm_group:      '👥 Grupo',
 
+    // Multi-person booking
+    collect_person_name:    '👤 *Pessoa {n} de {total}*\n\nQual é o nome dela?',
+    collect_person_service: '✂️ *Pessoa {n} — {name}*\n\nEscolha um serviço:',
+    group_parallel_note:    '(ao mesmo tempo)',
+    group_sequential_note:  '(logo em seguida)',
+    booked_header_multi:    '🎉 *Agendamentos Confirmados! ({count} pessoas)*',
+    booked_person_divider:  '─────────────────',
+    multi_total_price:      '💰 *Total: {currency} {total}*',
+    no_slots_multi:         '😔 Nenhum horário disponível para esta combinação em *{date}*. Por favor escolha outro dia.',
+
     menu_training:      '🎓 Treinamento de Barbeiro',
     training_unavailable: '😔 Nenhum material de treinamento disponível no momento. Volte em breve!',
 
     menu_gallery:       '📸 Ver Estilos & Galeria',
-    gallery_header:     '📸 *Nossos Estilos*\n\nEscolha uma categoria:',
+    gallery_header:     '📸 *Nossos Estilos*',
     gallery_no_tags:    '📸 Nenhuma foto disponível por enquanto. Volte em breve!',
     gallery_no_photos:  '😔 Nenhuma foto encontrada para este estilo. Tente outra categoria!',
     gallery_sending:    '📸 Estilos *{tag}*:',
@@ -712,6 +841,7 @@ const TRANSLATIONS = {
 
     // Feedback
     menu_feedback:             '💬 Reclamações & Sugestões',
+    menu_privacy:              '🔒 Privacidade & Política',
     feedback_header:           '💬 *Reclamações & Sugestões*\n\nO que gostaria de fazer?',
     feedback_option_complaint: '1️⃣ Fazer uma Reclamação',
     feedback_option_suggestion:'2️⃣ Compartilhar uma Sugestão',
@@ -737,11 +867,15 @@ function t(lang, key, vars = {}) {
 }
 
 const LANG_MENU_PROMPT_DEFAULT = '🌐 *Kies uw taal:*';
+const LANG_MENU_HINT_DEFAULT =
+  '_Typ een cijfer of de taal (bv. *1* of *Nederlands*)_\n' +
+  '_Reply with a number or the language (e.g. *2* or *English*)_';
 
-/** The language-selection menu shown to every new user (prompt line is configurable via settings) */
+/** The language-selection menu shown to every new user (prompt + hint lines are configurable via settings) */
 function buildLanguageMenu() {
   const q = require('../db/queries');
   const prompt = q.getSetting('lang_menu_prompt') || LANG_MENU_PROMPT_DEFAULT;
+  const hint   = q.getSetting('lang_menu_hint')   || LANG_MENU_HINT_DEFAULT;
   return [
     prompt,
     '',
@@ -750,10 +884,39 @@ function buildLanguageMenu() {
     '3️⃣  🇪🇸 Español',
     '4️⃣  🇫🇷 Français',
     '5️⃣  🇧🇷 Português',
+    '',
+    hint,
   ].join('\n');
 }
 
 const LANG_MAP = { '1': 'nl', '2': 'en', '3': 'es', '4': 'fr', '5': 'pt' };
+
+// What customers actually type instead of a number: the language name (in any of
+// the supported languages), the ISO language code, or the flag's country code.
+const LANG_ALIASES = {
+  nl: ['nederlands', 'dutch', 'hollands', 'nl', 'sr', 'su'],
+  en: ['english', 'engels', 'ingles', 'anglais', 'en', 'eng', 'gb', 'uk', 'us'],
+  es: ['espanol', 'spanish', 'spaans', 'espagnol', 'espanhol', 'es', 'esp'],
+  fr: ['francais', 'french', 'frans', 'frances', 'fr', 'fra'],
+  pt: ['portugues', 'portuguese', 'portugees', 'portugais', 'pt', 'br', 'bra'],
+};
+
+/**
+ * Match user input to a supported language.
+ * Accepts the menu number ('1'–'5'), the language name ("Nederlands", "español"),
+ * or a country/ISO code ("sr", "gb", "es", "fr", "br", "nl", "en", …).
+ * Accent-insensitive, so "espanol" matches "Español". Returns null if no match.
+ */
+function matchLanguage(text) {
+  const raw = (text || '').trim().toLowerCase();
+  if (LANG_MAP[raw]) return LANG_MAP[raw];
+  const norm = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  for (const [lang, aliases] of Object.entries(LANG_ALIASES)) {
+    if (aliases.includes(norm)) return lang;
+  }
+  return null;
+}
+
 const SUPPORTED = Object.keys(TRANSLATIONS);
 
-module.exports = { t, buildLanguageMenu, LANG_MAP, SUPPORTED, TRANSLATIONS };
+module.exports = { t, buildLanguageMenu, matchLanguage, LANG_MAP, SUPPORTED, TRANSLATIONS };
