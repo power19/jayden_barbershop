@@ -64,7 +64,7 @@ const TRANSLATIONS = {
     confirm_time:      '⏰ Time',
     confirm_duration:  '⏱️ Duration',
     confirm_price:     '💰 Price',
-    confirm_prompt:    'Reply *YES* to confirm ✅  |  *NO* to cancel ❌',
+    confirm_prompt:    'Reply *YES* to confirm your appointment ✅\n\n*NO* to cancel your appointment ❌',
     confirm_invalid:   'Please reply *YES* to confirm or *NO* to cancel.',
     confirm_cancel:    '❌ Booking cancelled. Type *1* to start again or *menu* for the main menu.',
 
@@ -237,7 +237,7 @@ const TRANSLATIONS = {
     confirm_time:      '⏰ Tijd',
     confirm_duration:  '⏱️ Duur',
     confirm_price:     '💰 Prijs',
-    confirm_prompt:    'Antwoord *JA* om te bevestigen ✅  |  *NEE* om te annuleren ❌',
+    confirm_prompt:    'Antwoord *JA* om je afspraak te bevestigen ✅\n\n*NEE* om je afspraak te annuleren ❌',
     confirm_invalid:   'Antwoord *JA* om te bevestigen of *NEE* om te annuleren.',
     confirm_cancel:    '❌ Boeking geannuleerd. Typ *1* om opnieuw te beginnen of *menu* voor het hoofdmenu.',
 
@@ -406,7 +406,7 @@ const TRANSLATIONS = {
     confirm_time:      '⏰ Hora',
     confirm_duration:  '⏱️ Duración',
     confirm_price:     '💰 Precio',
-    confirm_prompt:    'Responde *SÍ* para confirmar ✅  |  *NO* para cancelar ❌',
+    confirm_prompt:    'Responde *SÍ* para confirmar tu cita ✅\n\n*NO* para cancelar tu cita ❌',
     confirm_invalid:   'Por favor responde *SÍ* para confirmar o *NO* para cancelar.',
     confirm_cancel:    '❌ Reserva cancelada. Escribe *1* para empezar de nuevo o *menú* para el menú principal.',
 
@@ -575,7 +575,7 @@ const TRANSLATIONS = {
     confirm_time:      '⏰ Heure',
     confirm_duration:  '⏱️ Durée',
     confirm_price:     '💰 Prix',
-    confirm_prompt:    'Répondez *OUI* pour confirmer ✅  |  *NON* pour annuler ❌',
+    confirm_prompt:    'Répondez *OUI* pour confirmer votre rendez-vous ✅\n\n*NON* pour annuler votre rendez-vous ❌',
     confirm_invalid:   'Veuillez répondre *OUI* pour confirmer ou *NON* pour annuler.',
     confirm_cancel:    '❌ Réservation annulée. Tapez *1* pour recommencer ou *menu* pour le menu principal.',
 
@@ -744,7 +744,7 @@ const TRANSLATIONS = {
     confirm_time:      '⏰ Hora',
     confirm_duration:  '⏱️ Duração',
     confirm_price:     '💰 Preço',
-    confirm_prompt:    'Responda *SIM* para confirmar ✅  |  *NÃO* para cancelar ❌',
+    confirm_prompt:    'Responda *SIM* para confirmar seu agendamento ✅\n\n*NÃO* para cancelar seu agendamento ❌',
     confirm_invalid:   'Por favor responda *SIM* para confirmar ou *NÃO* para cancelar.',
     confirm_cancel:    '❌ Reserva cancelada. Digite *1* para recomeçar ou *menu* para o menu principal.',
 

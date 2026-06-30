@@ -1797,7 +1797,7 @@ function buildTimeMenuMulti(lang, date, slots, persons, page = 0) {
  */
 function buildConfirmationSummaryMulti(lang, persons, date, slot) {
   const allEmployees = q.getActiveEmployees();
-  const lines = [t(lang, 'confirm_header'), ``];
+  const lines = [t(lang, 'confirm_header'), ``, t(lang, 'confirm_prompt'), ``];
   lines.push(`📅 *${date.fullDisplay}*`);
   lines.push(``);
 
@@ -1817,8 +1817,6 @@ function buildConfirmationSummaryMulti(lang, persons, date, slot) {
 
   lines.push(``);
   lines.push(t(lang, 'multi_total_price', { currency: CUR(), total: totalPrice }));
-  lines.push(``);
-  lines.push(t(lang, 'confirm_prompt'));
   return lines.join('\n');
 }
 
@@ -1874,7 +1872,7 @@ function buildConfirmationSummary(lang, name, service, date, time, groupSize = 1
   const totalCount    = mainCount + overflowCount;
   const totalPrice    = (+service.price * totalCount).toFixed(0);
 
-  const lines = [t(lang, 'confirm_header'), ``];
+  const lines = [t(lang, 'confirm_header'), ``, t(lang, 'confirm_prompt'), ``];
   lines.push(`${t(lang, 'confirm_name')}: *${name}*`);
 
   if (totalCount > 1) {
@@ -1895,7 +1893,6 @@ function buildConfirmationSummary(lang, name, service, date, time, groupSize = 1
     lines.push(`${t(lang, 'confirm_price')}   : *${CUR()} ${service.price}*`);
   }
 
-  lines.push(``, t(lang, 'confirm_prompt'));
   return lines.join('\n');
 }
 
@@ -2062,7 +2059,8 @@ function buildRescheduleConfirm(lang, session, time) {
   const employee = session.rescheduleEmployee;
   const service  = session.rescheduleService;
   return [
-    t(lang, 'confirm_header'), ``,
+    t(lang, 'confirm_header'),
+    t(lang, 'confirm_prompt'),
     `👤 *${appt.customer_name}*`,
     employee ? `${t(lang, 'confirm_barber')}: *${employee.name}*` : '',
     `${service.emoji} ${t(lang, 'confirm_service')}: *${service.name}*`,
@@ -2070,7 +2068,6 @@ function buildRescheduleConfirm(lang, session, time) {
     `${t(lang, 'confirm_time')}: *${time.display}*`,
     ``,
     t(lang, 'manage_reschedule_confirm'),
-    t(lang, 'confirm_prompt'),
   ].filter(l => l !== '').join('\n');
 }
 
