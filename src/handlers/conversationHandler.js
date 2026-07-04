@@ -336,6 +336,7 @@ async function dispatchKeyword(action, userId, lang, session) {
       return await onTraining(userId, lang);
     case 'hours':    return buildHours(lang);
     case 'location': return buildLocation(lang);
+    case 'prices':   return buildPriceList(lang);
     case 'contact':  return buildContact(lang);
     case 'privacy':  return buildPrivacy(lang);
     case 'manage': {
@@ -1659,6 +1660,7 @@ const MENU_ITEM_LABEL = {
   booking:  (lang) => t(lang, 'menu_book'),
   hours:    (lang) => t(lang, 'menu_hours'),
   location: (lang) => t(lang, 'menu_location'),
+  prices:   (lang) => t(lang, 'menu_prices'),
   contact:  (lang) => t(lang, 'menu_contact'),
   gallery:  (lang) => t(lang, 'menu_gallery'),
   language: (lang) => `🌐 ${t(lang, 'menu_language')}`,
@@ -1672,6 +1674,7 @@ const MENU_ITEM_EMOJI = {
   booking:  '📅',
   hours:    '🕐',
   location: '📍',
+  prices:   '💰',
   contact:  '📞',
   gallery:  '📸',
   language: '🌐',
@@ -1691,6 +1694,7 @@ function getMenuItems() {
     { action: 'booking',  enabled: true  },
     { action: 'hours',    enabled: true  },
     { action: 'location', enabled: true  },
+    { action: 'prices',   enabled: true  },
     { action: 'contact',  enabled: true  },
     { action: 'gallery',  enabled: true  },
     { action: 'language', enabled: true  },
@@ -1724,6 +1728,19 @@ function buildMainMenu(lang, customHeader = null) {
     return `${num(i)} ${label}`;
   });
   return [header, '', ...lines, '', t(lang, 'menu_reply')].join('\n');
+}
+
+// Read-only price list for the "Service Prices" menu option. Shows every active
+// service (toggling a service off in the dashboard hides it here automatically).
+function buildPriceList(lang) {
+  const services = q.getActiveServices();
+  if (!services.length) {
+    return `${t(lang, 'services_header')}\n\n${t(lang, 'back_menu')}`;
+  }
+  const list = services.map(s =>
+    `${s.emoji ? `${s.emoji} ` : ''}*${s.name}* — 💰 ${CUR()} ${s.price}${s.description ? `\n   _${s.description}_` : ''}`
+  ).join('\n\n');
+  return `${t(lang, 'services_header')}\n\n${list}\n\n${t(lang, 'back_menu')}`;
 }
 
 function buildServiceMenu(lang, isBooking, page = 0) {
@@ -1797,7 +1814,7 @@ function buildTimeMenuMulti(lang, date, slots, persons, page = 0) {
  */
 function buildConfirmationSummaryMulti(lang, persons, date, slot) {
   const allEmployees = q.getActiveEmployees();
-  const lines = [t(lang, 'confirm_header'), ``, t(lang, 'confirm_prompt'), ``];
+  const lines = [t(lang, 'confirm_prompt'), ``];
   lines.push(`📅 *${date.fullDisplay}*`);
   lines.push(``);
 
@@ -1872,7 +1889,7 @@ function buildConfirmationSummary(lang, name, service, date, time, groupSize = 1
   const totalCount    = mainCount + overflowCount;
   const totalPrice    = (+service.price * totalCount).toFixed(0);
 
-  const lines = [t(lang, 'confirm_header'), ``, t(lang, 'confirm_prompt'), ``];
+  const lines = [t(lang, 'confirm_prompt'), ``];
   lines.push(`${t(lang, 'confirm_name')}: *${name}*`);
 
   if (totalCount > 1) {
@@ -2059,7 +2076,6 @@ function buildRescheduleConfirm(lang, session, time) {
   const employee = session.rescheduleEmployee;
   const service  = session.rescheduleService;
   return [
-    t(lang, 'confirm_header'),
     t(lang, 'confirm_prompt'),
     `👤 *${appt.customer_name}*`,
     employee ? `${t(lang, 'confirm_barber')}: *${employee.name}*` : '',

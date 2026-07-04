@@ -759,7 +759,7 @@ router.get('/customers/:id/appointments', (req, res) => {
 
 // ── Menu order ────────────────────────────────────────────────────────────────
 
-const VALID_ACTIONS = new Set(['booking','hours','location','contact','gallery','language','manage','training','feedback','privacy']);
+const VALID_ACTIONS = new Set(['booking','hours','location','prices','contact','gallery','language','manage','training','feedback','privacy']);
 
 router.get('/menu', (req, res) => {
   try {
